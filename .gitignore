@@ -1,0 +1,18 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+build/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Generated files
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
