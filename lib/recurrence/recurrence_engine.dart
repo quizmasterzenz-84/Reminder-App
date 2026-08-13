@@ -63,7 +63,16 @@ DateTime? computeNextTrigger(
       next = addMonthsClamped(lastTriggerTime, 1);
       break;
     case RecurrenceType.customIntervalDays:
-      next = lastTriggerTime.add(Duration(days: rule.intervalDays!));
+      next = DateTime(
+        lastTriggerTime.year,
+        lastTriggerTime.month,
+        lastTriggerTime.day + rule.intervalDays!,
+        lastTriggerTime.hour,
+        lastTriggerTime.minute,
+        lastTriggerTime.second,
+        lastTriggerTime.millisecond,
+        lastTriggerTime.microsecond,
+      );
       break;
   }
 

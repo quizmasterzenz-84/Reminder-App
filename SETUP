@@ -1,0 +1,118 @@
+[Copy]Complete Flutter + Android Development Setup Guide for a New Windows Laptop
+Complete Flutter + Android Development Setup Guide for a New Windows Laptop
+This document provides a single, complete, future-proof setup guide for configuring a brand-new Windows laptop for Flutter + Android development. It includes installation steps, environment variables, PATH configuration, license acceptance, and verification commands.
+
+1. Install Required Software
+Git
+Download and install Git for Windows: https://git-scm.com/download/win
+Python
+Download Python 3.10+ and select Add Python to PATH: https://www.python.org/downloads/windows/
+Flutter SDK
+Download Flutter SDK (Windows ZIP): https://docs.flutter.dev/get-started/install/windows
+Extract the ZIP to:
+C:\flutter
+
+Android Studio
+Download and install Android Studio: https://developer.android.com/studio
+
+2. Install Android SDK Components
+Open Android Studio → More Actions → SDK Manager
+SDK Platforms
+Select:
+Android 14 (or latest)
+Android 13
+SDK Tools
+Enable:
+Android SDK Command-line Tools (latest)
+Android SDK Build-tools
+Android SDK Platform-tools
+Android Emulator
+Google USB Driver
+Click Apply → OK.
+
+3. Configure Environment Variables (Admin CMD)
+Open Command Prompt as Administrator:
+Win + R → cmd → Ctrl + Shift + Enter
+
+Android SDK Paths
+setx ANDROID_HOME "C:\Users\Home\AppData\Local\Android\sdk" /M
+setx PATH "%PATH%;C:\Users\Home\AppData\Local\Android\sdk\platform-tools" /M
+setx PATH "%PATH%;C:\Users\Home\AppData\Local\Android\sdk\cmdline-tools\latest\bin" /M
+setx PATH "%PATH%;C:\Users\Home\AppData\Local\Android\sdk\tools\bin" /M
+
+Flutter Paths
+setx PATH "%PATH%;C:\flutter\bin" /M
+setx PATH "%PATH%;C:\flutter\bin\dart" /M
+setx PATH "%PATH%;C:\flutter\bin\cache\dart-sdk\bin" /M
+
+Git Paths
+setx PATH "%PATH%;C:\Program Files\Git\bin" /M
+setx PATH "%PATH%;C:\Program Files\Git\cmd" /M
+
+Python Paths
+setx PATH "%PATH%;C:\Users\Home\AppData\Local\Programs\Python\Python310\" /M
+setx PATH "%PATH%;C:\Users\Home\AppData\Local\Programs\Python\Python310\Scripts\" /M
+
+PowerShell Path (Required for Flutter)
+setx PATH "%PATH%;C:\Windows\System32\WindowsPowerShell\v1.0\" /M
+
+
+4. Restart System
+Restart:
+CMD
+PowerShell
+VS Code
+Android Studio
+Windows (recommended)
+
+5. Verify All Tools
+Git
+git --version
+
+Flutter
+flutter doctor
+
+ADB
+adb version
+
+Python
+python --version
+pip --version
+
+PowerShell
+where powershell
+
+
+6. Accept Android Licenses
+Run:
+flutter doctor --android-licenses
+
+Press Y for all licenses.
+
+7. Final Verification
+Run:
+flutter doctor
+
+You should see:
+• No issues found!
+
+This confirms your laptop is fully ready for Flutter + Android development.
+
+8. Optional: Recommended Tools
+Visual Studio Code
+Flutter & Dart extensions
+Android Emulator setup
+
+9. Summary
+This document provides a complete one-time setup for:
+Flutter SDK
+Android SDK
+Command-line tools
+Git
+Python
+PowerShell
+Environment variables
+License acceptance
+Once completed, your system is fully configured for Android development.
+
+End of document.
