@@ -41,7 +41,7 @@ class CategorySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      value: selectedId,
+      initialValue: selectedId,
       decoration: const InputDecoration(labelText: 'Category'),
       items: [
         for (final c in categories)
