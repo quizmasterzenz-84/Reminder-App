@@ -10,12 +10,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:reminder_demo/main.dart';
 
 void main() {
-  testWidgets('shows the reminder demo screen', (WidgetTester tester) async {
+  testWidgets('shows the reminders screen', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const ReminderDemoApp());
 
-    expect(find.text('Reminder Demo'), findsOneWidget);
-    expect(find.text('Reusable reminder kit demo'), findsOneWidget);
+    expect(find.text('Reminders'), findsOneWidget);
+    expect(find.text('Your reminders'), findsOneWidget);
     expect(find.text('Next 14 days'), findsOneWidget);
   });
 }

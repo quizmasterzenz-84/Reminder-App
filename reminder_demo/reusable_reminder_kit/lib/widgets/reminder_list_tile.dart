@@ -18,6 +18,10 @@ class ReminderListTile extends StatelessWidget {
   final String? snoozeLabel;
   final VoidCallback? onTap;
 
+  /// True once [nextTriggerTime] has passed. Callers decide "now" (e.g. via
+  /// a periodic timer) so this widget stays a pure function of its inputs.
+  final bool isDue;
+
   const ReminderListTile({
     super.key,
     required this.category,
@@ -27,12 +31,14 @@ class ReminderListTile extends StatelessWidget {
     this.finalTime,
     this.snoozeLabel,
     this.onTap,
+    this.isDue = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final parts = <String>[
-      if (nextTriggerTime != null) 'Next: ${formatShortDate(nextTriggerTime!)}',
+      if (nextTriggerTime != null)
+        'Next: ${formatShortDateTime(nextTriggerTime!)}',
       if (finalTime != null) 'Final: ${formatShortDate(finalTime!)}',
       if (snoozeLabel != null) 'Snooze: $snoozeLabel',
     ];
@@ -51,6 +57,22 @@ class ReminderListTile extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
+          if (isDue)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.red.shade600,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Due now',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
         ],
       ),
       subtitle: parts.isEmpty
