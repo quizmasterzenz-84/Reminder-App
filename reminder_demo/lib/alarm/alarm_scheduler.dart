@@ -10,9 +10,20 @@ class AlarmScheduler {
     final settings = AlarmSettings(
       id: id,
       dateTime: dateTime,
-      assetAudioPath: audioPath, // null falls back to the plugin's default tone
+
+      // Audio file (user‑recorded or default)
+      assetAudioPath: audioPath,
+
+      // Alarm behaviour
       loopAudio: true,
       vibrate: true,
+      volume: 0.8,
+
+      // Required in alarm v3.x
+      notificationTitle: "Reminder",
+      notificationBody: "Your reminder is ringing",
+
+      // Android-specific
       androidFullScreenIntent: true,
     );
 

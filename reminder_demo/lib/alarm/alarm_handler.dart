@@ -7,7 +7,7 @@ class AlarmHandler {
   static AlarmAudioPlayer? _activePlayer;
 
   static void initialize() {
-    Alarm.onAlarm.listen((alarm) {
+    Alarm.ringStream.stream.listen((alarm) {
       final audioPath = alarm.settings.assetAudioPath;
       if (audioPath != null) {
         _activePlayer?.dispose();
