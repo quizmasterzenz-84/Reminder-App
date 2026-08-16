@@ -7,10 +7,11 @@ import '../storage/audio_storage_manager.dart';
 /// Records a short voice message into the app's Music/ReminderApp folder.
 class VoiceRecorder {
   final AudioRecorder _recorder = AudioRecorder();
+  final String recorderId = "main_recorder";
 
   /// Check microphone permission
   Future<bool> _checkPermission() async {
-    return await _recorder.hasPermission(request: true);
+    return await _recorder.hasPermission(recorderId, request: true);
   }
 
   /// Start recording to a file
@@ -31,8 +32,9 @@ class VoiceRecorder {
     );
 
     await _recorder.start(
-      path: path,
-      config: config,
+      recorderId,
+      path,
+      config,
     );
 
     return path;
@@ -40,7 +42,7 @@ class VoiceRecorder {
 
   /// Stop recording and return the file path
   Future<String?> stopRecording() async {
-    return await _recorder.stop();
+    return await _recorder.stop(recorderId);
   }
 
   /// Optional: start audio stream (waveform)
@@ -51,12 +53,15 @@ class VoiceRecorder {
       bitRate: 128000,
     );
 
-    return _recorder.startStream(config);
+    return _recorder.startStream(
+      recorderId,
+      config,
+    );
   }
 
   /// Stop streaming
   Future<void> stopStream() async {
-    await _recorder.stop();
+    await _recorder.stop(recorderId);
   }
 
   Future<void> dispose() async {

@@ -9,7 +9,7 @@ class AlarmHandler {
   static void initialize() {
     Alarm.ringStream.stream.listen((alarm) {
       // Correct API for alarm v3.x
-      final audioPath = alarm.alarmSettings.assetAudioPath;
+      final audioPath = alarm.settings.assetAudioPath;
 
       if (audioPath != null && audioPath.isNotEmpty) {
         _activePlayer?.dispose();
