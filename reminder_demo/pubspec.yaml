@@ -41,7 +41,7 @@ dependencies:
   # New dependencies for audio & alarm
   alarm: 3.1.7        # Codemagic uses this version internally
   just_audio: ^0.9.36
-  record: 3.0.0       # Codemagic uses record v3.x API (positional args only)
+  record: 4.4.0       # Codemagic uses record v3.x API (positional args only)
   file_picker: ^8.1.2
   path_provider: ^2.1.0
   path: ^1.9.0
