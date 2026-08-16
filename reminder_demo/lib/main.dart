@@ -1,9 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import 'package:reusable_reminder_kit/reusable_reminder_kit.dart';
 
+import 'alarm/alarm_handler.dart';
+import 'alarm/alarm_scheduler.dart';
+import 'audio/cleanup/audio_cleanup_service.dart';
+import 'audio/picker/audio_picker.dart';
+import 'audio/recording/voice_recorder.dart';
+import 'audio/system/system_alarm_loader.dart';
+
 void main() {
+  AlarmHandler.initialize();
   runApp(const ReminderDemoApp());
 }
 
@@ -34,6 +43,11 @@ class _Reminder {
   final DateTime? finalTime;
   final String? snoozeLabel;
 
+  // Link to the alarm's audio source (system tone, recording, or picked file).
+  // Null means "no audio chosen yet" — existing reminders keep working as-is.
+  final String? audioPath;
+  final String? audioId;
+
   const _Reminder({
     required this.id,
     required this.categoryId,
@@ -43,6 +57,8 @@ class _Reminder {
     required this.nextTriggerTime,
     this.finalTime,
     this.snoozeLabel,
+    this.audioPath,
+    this.audioId,
   });
 }
 
@@ -213,6 +229,8 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       initialTime.day,
     );
     TimeOfDay pickedTime = TimeOfDay.fromDateTime(initialTime);
+    String? audioPath = editing?.audioPath;
+    String? audioId = editing?.audioId;
 
     final saved = await showDialog<bool>(
       context: context,
@@ -284,6 +302,70 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                     hintText: 'e.g. 5 min',
                   ),
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  'Alarm sound',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                Text(
+                  audioId == null ? 'Default tone' : audioId!,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.alarm),
+                      label: const Text('System tone'),
+                      onPressed: () async {
+                        final picked = await _pickSystemTone(context);
+                        if (picked != null) {
+                          setDialogState(() {
+                            audioPath = picked.path;
+                            audioId = picked.id;
+                          });
+                        }
+                      },
+                    ),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.mic),
+                      label: const Text('Record voice'),
+                      onPressed: () async {
+                        final recorded = await _recordVoiceMessage(context);
+                        if (recorded != null) {
+                          setDialogState(() {
+                            audioPath = recorded.path;
+                            audioId = recorded.id;
+                          });
+                        }
+                      },
+                    ),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.folder_open),
+                      label: const Text('Pick file'),
+                      onPressed: () async {
+                        final picked = await AudioPicker.pickAudioFile();
+                        if (picked != null) {
+                          setDialogState(() {
+                            audioPath = picked.path;
+                            audioId = picked.id;
+                          });
+                        }
+                      },
+                    ),
+                    if (audioPath != null)
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.clear),
+                        label: const Text('Clear'),
+                        onPressed: () => setDialogState(() {
+                          audioPath = null;
+                          audioId = null;
+                        }),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -328,6 +410,8 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       snoozeLabel: snoozeController.text.trim().isEmpty
           ? null
           : snoozeController.text.trim(),
+      audioPath: audioPath,
+      audioId: audioId,
     );
 
     setState(() {
@@ -339,6 +423,77 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
         _alreadyNotifiedIds.remove(editing.id);
       }
     });
+
+    // Best-effort: native alarm scheduling only works on a real Android build.
+    try {
+      await AlarmScheduler.scheduleReminder(
+        id: updatedReminder.id,
+        dateTime: updatedReminder.nextTriggerTime,
+        audioPath: updatedReminder.audioPath,
+      );
+    } catch (_) {
+      // Ignore on platforms/tests where the alarm plugin isn't available.
+    }
+  }
+
+  Future<({String path, String id})?> _pickSystemTone(
+    BuildContext dialogContext,
+  ) async {
+    final tones = await SystemAlarmLoader.loadSystemAlarmTones();
+    if (!dialogContext.mounted) return null;
+    if (tones.isEmpty) {
+      ScaffoldMessenger.of(dialogContext).showSnackBar(
+        const SnackBar(
+          content: Text('No system alarm tones found on this device.'),
+        ),
+      );
+      return null;
+    }
+
+    return showDialog<({String path, String id})>(
+      context: dialogContext,
+      builder: (context) => SimpleDialog(
+        title: const Text('Choose a system tone'),
+        children: [
+          for (final tone in tones)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop((
+                path: tone.path,
+                id: p.basenameWithoutExtension(tone.path),
+              )),
+              child: Text(p.basename(tone.path)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<({String path, String id})?> _recordVoiceMessage(
+    BuildContext dialogContext,
+  ) async {
+    final recorder = VoiceRecorder();
+    final started = await recorder.startRecording();
+    if (!dialogContext.mounted || started == null) return null;
+
+    final stop = await showDialog<bool>(
+      context: dialogContext,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Recording\u2026'),
+        content: const Text('Tap stop when you\'re done.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Stop'),
+          ),
+        ],
+      ),
+    );
+
+    if (stop != true) return null;
+    final path = await recorder.stopRecording();
+    if (path == null) return null;
+    return (path: path, id: p.basenameWithoutExtension(path));
   }
 
   Future<void> _showReminderDetails(_Reminder reminder) async {
@@ -397,6 +552,20 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       message: 'This will remove "${reminder.title}" permanently.',
     );
     if (confirmed) {
+      await AudioCleanupService.deleteAudioIfUnused(
+        deletedId: reminder.id,
+        audioPath: reminder.audioPath,
+        audioId: reminder.audioId,
+        others: _reminders
+            .where((r) => r.id != reminder.id)
+            .map((r) => (id: r.id, audioId: r.audioId))
+            .toList(),
+      );
+      try {
+        await AlarmScheduler.cancelReminder(reminder.id);
+      } catch (_) {
+        // Ignore on platforms/tests where the alarm plugin isn't available.
+      }
       setState(() {
         _reminders.removeWhere((r) => r.id == reminder.id);
         _alreadyNotifiedIds.remove(reminder.id);
@@ -422,6 +591,30 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       appBar: AppBar(
         title: const Text('Reminders'),
         actions: [
+          IconButton(
+            tooltip: 'Where are my recordings stored?',
+            icon: const Icon(Icons.folder_outlined),
+            onPressed: () {
+              showDialog<void>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Where are my recorded messages stored?'),
+                  content: const Text(
+                    'Your recorded reminder messages are saved in your '
+                    "phone's Music folder.\n\n"
+                    'To view or delete them:\n'
+                    'Open File Manager → Audio → Music → ReminderApp',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'About',
             icon: const Icon(Icons.info_outline),
