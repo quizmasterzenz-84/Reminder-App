@@ -8,7 +8,7 @@ class VoiceRecorder {
   final AudioRecorder _recorder = AudioRecorder();
 
   Future<bool> _checkPermission() async {
-    return await _recorder.hasPermission(request: true);
+    return await _recorder.hasPermission();
   }
 
   Future<String?> startRecording() async {
@@ -21,16 +21,8 @@ class VoiceRecorder {
     final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
     final path = p.join(folder.path, fileName);
 
-    final config = RecordConfig(
-      encoder: AudioEncoder.aacLc,
-      bitRate: 128000,
-      sampleRate: 44100,
-    );
-
-    await _recorder.start(
-      path: path,
-      config: config,
-    );
+    // record v3.x only accepts ONE positional argument: the file path
+    await _recorder.start(path);
 
     return path;
   }
@@ -40,13 +32,8 @@ class VoiceRecorder {
   }
 
   Future<Stream<Uint8List>?> startStream() async {
-    final config = RecordConfig(
-      encoder: AudioEncoder.wav,
-      sampleRate: 44100,
-      bitRate: 128000,
-    );
-
-    return await _recorder.startStream(config);
+    // record v3.x: startStream() has NO parameters
+    return await _recorder.startStream();
   }
 
   Future<void> stopStream() async {
