@@ -12,7 +12,8 @@ class AlarmScheduler {
       dateTime: dateTime,
 
       // Audio file (user‑recorded or default)
-      assetAudioPath: audioPath,
+      // MUST be non-null for alarm v3.x
+      assetAudioPath: audioPath ?? "",
 
       // Alarm behaviour
       loopAudio: true,
