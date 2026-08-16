@@ -34,13 +34,14 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+
   reusable_reminder_kit:
     path: ./reusable_reminder_kit
 
   # New dependencies for audio & alarm
-  alarm: ^3.0.0
+  alarm: 3.1.7        # Codemagic uses this version internally
   just_audio: ^0.9.36
-  record: ^6.1.0
+  record: 3.0.0       # Codemagic uses record v3.x API (positional args only)
   file_picker: ^8.1.2
   path_provider: ^2.1.0
   path: ^1.9.0
