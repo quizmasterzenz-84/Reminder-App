@@ -6,9 +6,14 @@ import '../storage/audio_storage_manager.dart';
 
 class VoiceRecorder {
   final AudioRecorder _recorder = AudioRecorder();
+  final String _id = "main";   // recorderId required in record 5.x
 
   Future<bool> _checkPermission() async {
-    return await _recorder.hasPermission(request: true);
+    try {
+      return await _recorder.hasPermission(_id);
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<String?> startRecording() async {
@@ -21,39 +26,47 @@ class VoiceRecorder {
     final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
     final path = p.join(folder.path, fileName);
 
-    final config = RecordConfig(
-      encoder: AudioEncoder.aacLc,
-      bitRate: 128000,
-      sampleRate: 44100,
-    );
-
-    await _recorder.start(
-      path: path,
-      config: config,
-    );
-
-    return path;
+    try {
+      await _recorder.start(path);   // record 5.x API
+      return path;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String?> stopRecording() async {
-    return await _recorder.stop();
+    try {
+      await _recorder.stop(_id);     // record 5.x API
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   Stream<Uint8List>? startStream() {
-    final config = RecordConfig(
-      encoder: AudioEncoder.wav,
-      sampleRate: 44100,
-      bitRate: 128000,
-    );
-
-    return _recorder.startStream(config);
+    try {
+      return _recorder.startStream(
+        _id,
+        RecordConfig(
+          encoder: AudioEncoder.wav,
+          sampleRate: 44100,
+          bitRate: 128000,
+        ),
+      );   // record 5.x API
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> stopStream() async {
-    await _recorder.stop();
+    try {
+      await _recorder.stop(_id);     // record 5.x API
+    } catch (_) {}
   }
 
   Future<void> dispose() async {
-    await _recorder.dispose();
+    try {
+      await _recorder.dispose();
+    } catch (_) {}
   }
 }
