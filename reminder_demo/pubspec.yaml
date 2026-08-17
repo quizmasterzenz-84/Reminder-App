@@ -43,7 +43,7 @@ dependencies:
   just_audio: ^0.9.36
 
   # Recorder (Codemagic-safe version)
-  record: ^7.0.0       # Works with Codemagic AGP 8.12 + Gradle 8.14
+  record: 7.1.1       # MUST match platform_interface + linux versions
 
   file_picker: ^8.1.2
   path_provider: ^2.1.0
@@ -103,8 +103,8 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
 # FIX FOR CODEMAGIC:
-# Codemagic installs mismatched record sub‑packages (Linux + Platform Interface).
-# These overrides force the correct versions that match record 5.0.0.
+# Codemagic was installing mismatched record sub‑packages.
+# These overrides force the correct versions that match record 7.1.1.
 dependency_overrides:
-  record_platform_interface: 1.4.0
-  record_linux: 0.6.0
+  record_platform_interface: 1.6.0
+  record_linux: 0.7.2
