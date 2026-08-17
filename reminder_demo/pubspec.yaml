@@ -43,7 +43,7 @@ dependencies:
   just_audio: ^0.9.36
 
   # Recorder (Codemagic-safe version)
-  record: 5.0.0       # Works with Codemagic AGP 8.12 + Gradle 8.14
+  record: ^7.0.0       # Works with Codemagic AGP 8.12 + Gradle 8.14
 
   file_picker: ^8.1.2
   path_provider: ^2.1.0
