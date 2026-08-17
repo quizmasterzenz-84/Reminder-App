@@ -42,8 +42,10 @@ dependencies:
   alarm: 3.1.7        # Codemagic uses this version internally
   just_audio: ^0.9.36
 
-  # Recorder (Codemagic-safe version)
-  record: 7.1.1       # MUST match platform_interface + linux versions
+  # ⭐ Recorder (Codemagic‑safe version)
+  # record 7.x breaks Codemagic due to Linux plugin mismatch.
+  # record 5.0.4 is the last stable version across Linux/macOS/Windows.
+  record: 5.0.4
 
   file_picker: ^8.1.2
   path_provider: ^2.1.0
@@ -102,9 +104,9 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# FIX FOR CODEMAGIC:
-# Codemagic was installing mismatched record sub‑packages.
-# These overrides force the correct versions that match record 7.1.1.
+# ⭐ FIX FOR CODEMAGIC:
+# Codemagic Linux builder breaks with record 7.x.
+# These overrides FORCE the correct stable versions that match record 5.0.4.
 dependency_overrides:
-  record_platform_interface: 1.6.0
-  record_linux: 0.7.2
+  record_platform_interface: 1.4.0   # Matches record 5.x
+  record_linux: 0.6.0                # Stable Linux implementation
