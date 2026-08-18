@@ -6,11 +6,10 @@ import '../storage/audio_storage_manager.dart';
 
 class VoiceRecorder {
   final AudioRecorder _recorder = AudioRecorder();
-  final String _id = "main";   // recorderId required in record 5.x
 
   Future<bool> _checkPermission() async {
     try {
-      return await _recorder.hasPermission(_id);
+      return await _recorder.hasPermission();
     } catch (_) {
       return false;
     }
@@ -27,7 +26,10 @@ class VoiceRecorder {
     final path = p.join(folder.path, fileName);
 
     try {
-      await _recorder.start(path);   // record 5.x API
+      await _recorder.start(
+        const RecordConfig(encoder: AudioEncoder.aacLc),
+        path: path,
+      );
       return path;
     } catch (_) {
       return null;
@@ -36,8 +38,7 @@ class VoiceRecorder {
 
   Future<String?> stopRecording() async {
     try {
-      await _recorder.stop(_id);     // record 5.x API
-      return null;
+      return await _recorder.stop();
     } catch (_) {
       return null;
     }
@@ -46,13 +47,12 @@ class VoiceRecorder {
   Stream<Uint8List>? startStream() {
     try {
       return _recorder.startStream(
-        _id,
-        RecordConfig(
+        const RecordConfig(
           encoder: AudioEncoder.wav,
           sampleRate: 44100,
           bitRate: 128000,
         ),
-      );   // record 5.x API
+      );
     } catch (_) {
       return null;
     }
@@ -60,7 +60,7 @@ class VoiceRecorder {
 
   Future<void> stopStream() async {
     try {
-      await _recorder.stop(_id);     // record 5.x API
+      await _recorder.stop();
     } catch (_) {}
   }
 

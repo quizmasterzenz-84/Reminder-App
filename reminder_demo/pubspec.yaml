@@ -103,10 +103,3 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-
-# ⭐ FIX FOR CODEMAGIC:
-# Codemagic Linux builder breaks with record 7.x.
-# These overrides FORCE the correct stable versions that match record 5.0.4.
-dependency_overrides:
-  record_platform_interface: 1.4.0   # Matches record 5.x
-  record_linux: 0.6.0                # Stable Linux implementation
