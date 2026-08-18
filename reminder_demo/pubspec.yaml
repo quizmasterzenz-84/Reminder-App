@@ -42,10 +42,10 @@ dependencies:
   alarm: 3.1.7        # Codemagic uses this version internally
   just_audio: ^0.9.36
 
-  # ⭐ Recorder (Codemagic‑safe version)
-  # record 7.x breaks Codemagic due to Linux plugin mismatch.
-  # record 5.0.4 is the last stable version across Linux/macOS/Windows.
-  record: 5.0.4
+  # record 5.x's platform packages (record_linux/record_platform_interface) on
+  # pub.dev no longer implement each other correctly - use the current 7.x line
+  # instead, whose record_linux/record_platform_interface versions are matched.
+  record: ^7.1.1
 
   file_picker: ^8.1.2
   path_provider: ^2.1.0
