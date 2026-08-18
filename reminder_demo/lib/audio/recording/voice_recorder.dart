@@ -44,9 +44,9 @@ class VoiceRecorder {
     }
   }
 
-  Stream<Uint8List>? startStream() {
+  Future<Stream<Uint8List>?> startStream() async {
     try {
-      return _recorder.startStream(
+      return await _recorder.startStream(
         const RecordConfig(
           encoder: AudioEncoder.wav,
           sampleRate: 44100,
