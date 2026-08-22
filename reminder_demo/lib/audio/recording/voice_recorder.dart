@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';        // <-- REQUIRED for debugPrint
 import 'package:path/path.dart' as p;
 import 'package:record/record.dart';
 
@@ -33,14 +34,14 @@ class VoiceRecorder {
 
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-    // Try AAC first
+    // Try AAC first (supported in your version)
     try {
       final path = p.join(folder.path, 'voice_$timestamp.m4a');
       await _recorder.start(
-        const RecordConfig(
+        RecordConfig(
           encoder: AudioEncoder.aacLc,
           bitRate: 128000,
-          audioSource: AudioSource.microphone,
+          sampleRate: 44100,
         ),
         path: path,
       );
@@ -49,15 +50,14 @@ class VoiceRecorder {
       debugPrint('AAC record failed: $e');
     }
 
-    // Fallback to WAV
+    // Fallback to WAV (your version supports WAV encoder, but NOT audioSource)
     try {
       final path = p.join(folder.path, 'voice_$timestamp.wav');
       await _recorder.start(
-        const RecordConfig(
+        RecordConfig(
           encoder: AudioEncoder.wav,
-          sampleRate: 44100,
           bitRate: 128000,
-          audioSource: AudioSource.microphone,
+          sampleRate: 44100,
         ),
         path: path,
       );
@@ -80,11 +80,10 @@ class VoiceRecorder {
   Future<Stream<Uint8List>?> startStream() async {
     try {
       return await _recorder.startStream(
-        const RecordConfig(
+        RecordConfig(
           encoder: AudioEncoder.wav,
-          sampleRate: 44100,
           bitRate: 128000,
-          audioSource: AudioSource.microphone,
+          sampleRate: 44100,
         ),
       );
     } catch (e) {
