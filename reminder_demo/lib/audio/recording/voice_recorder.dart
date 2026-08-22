@@ -10,7 +10,7 @@ class VoiceRecorder {
   Future<bool> _checkPermission() async {
     try {
       return await _recorder.hasPermission(request: true);
-    } catch (_) {
+    } catch (e) {
       return false;
     }
   }
@@ -21,28 +21,49 @@ class VoiceRecorder {
       throw Exception("Microphone permission not granted");
     }
 
+    // Prevent double-start crash
+    if (await _recorder.isRecording()) {
+      await _recorder.stop();
+    }
+
     final folder = await AudioStorageManager.getReminderAudioFolder();
+    if (!folder.existsSync()) {
+      await folder.create(recursive: true);
+    }
+
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
+    // Try AAC first
     try {
       final path = p.join(folder.path, 'voice_$timestamp.m4a');
       await _recorder.start(
-        const RecordConfig(encoder: AudioEncoder.aacLc),
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          audioSource: AudioSource.microphone,
+        ),
         path: path,
       );
       return path;
-    } catch (_) {
-      // Try a broadly supported uncompressed format before giving up.
+    } catch (e) {
+      debugPrint('AAC record failed: $e');
     }
 
+    // Fallback to WAV
     try {
       final path = p.join(folder.path, 'voice_$timestamp.wav');
       await _recorder.start(
-        const RecordConfig(encoder: AudioEncoder.wav),
+        const RecordConfig(
+          encoder: AudioEncoder.wav,
+          sampleRate: 44100,
+          bitRate: 128000,
+          audioSource: AudioSource.microphone,
+        ),
         path: path,
       );
       return path;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('WAV record failed: $e');
       return null;
     }
   }
@@ -50,7 +71,8 @@ class VoiceRecorder {
   Future<String?> stopRecording() async {
     try {
       return await _recorder.stop();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Stop failed: $e');
       return null;
     }
   }
@@ -62,9 +84,11 @@ class VoiceRecorder {
           encoder: AudioEncoder.wav,
           sampleRate: 44100,
           bitRate: 128000,
+          audioSource: AudioSource.microphone,
         ),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Stream start failed: $e');
       return null;
     }
   }
@@ -72,12 +96,16 @@ class VoiceRecorder {
   Future<void> stopStream() async {
     try {
       await _recorder.stop();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Stream stop failed: $e');
+    }
   }
 
   Future<void> dispose() async {
     try {
       await _recorder.dispose();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Dispose failed: $e');
+    }
   }
 }

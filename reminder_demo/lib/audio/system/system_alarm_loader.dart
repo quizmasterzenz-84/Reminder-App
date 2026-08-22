@@ -9,17 +9,38 @@ class SystemAlarmLoader {
     '/product/media/audio/ringtones',
   ];
 
+  static const List<String> _allowedExtensions = [
+    '.mp3',
+    '.ogg',
+    '.wav',
+    '.m4a',
+    '.aac',
+  ];
+
   static Future<List<FileSystemEntity>> loadSystemAlarmTones() async {
     final tones = <FileSystemEntity>[];
 
     for (final dir in _systemDirs) {
       try {
         final directory = Directory(dir);
-        if (directory.existsSync()) {
-          tones.addAll(directory.listSync());
+
+        if (!directory.existsSync()) {
+          continue;
         }
-      } catch (_) {
+
+        final files = directory.listSync();
+
+        for (final file in files) {
+          if (file is File) {
+            final ext = file.path.toLowerCase();
+            if (_allowedExtensions.any((e) => ext.endsWith(e))) {
+              tones.add(file);
+            }
+          }
+        }
+      } catch (e) {
         // Ignore inaccessible or unsupported system folders.
+        debugPrint('SystemAlarmLoader: Cannot read $dir → $e');
       }
     }
 
