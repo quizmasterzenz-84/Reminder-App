@@ -9,7 +9,7 @@ class VoiceRecorder {
 
   Future<bool> _checkPermission() async {
     try {
-      return await _recorder.hasPermission();
+      return await _recorder.hasPermission(request: true);
     } catch (_) {
       return false;
     }
@@ -22,12 +22,23 @@ class VoiceRecorder {
     }
 
     final folder = await AudioStorageManager.getReminderAudioFolder();
-    final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    final path = p.join(folder.path, fileName);
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
 
     try {
+      final path = p.join(folder.path, 'voice_$timestamp.m4a');
       await _recorder.start(
         const RecordConfig(encoder: AudioEncoder.aacLc),
+        path: path,
+      );
+      return path;
+    } catch (_) {
+      // Try a broadly supported uncompressed format before giving up.
+    }
+
+    try {
+      final path = p.join(folder.path, 'voice_$timestamp.wav');
+      await _recorder.start(
+        const RecordConfig(encoder: AudioEncoder.wav),
         path: path,
       );
       return path;

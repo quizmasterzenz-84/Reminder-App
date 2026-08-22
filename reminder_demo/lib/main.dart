@@ -250,11 +250,13 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text(editing == null ? 'Add reminder' : 'Edit reminder'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 TextField(
                   controller: titleController,
                   autofocus: true,
@@ -315,19 +317,18 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                     hintText: 'e.g. 5 min',
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Text(
                   'Alarm sound',
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
                 Text(
                   audioId == null ? 'Default tone' : audioId!,
-                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
-                  runSpacing: 4,
+                  runSpacing: 8,
                   children: [
                     OutlinedButton.icon(
                       icon: const Icon(Icons.alarm),
@@ -379,7 +380,8 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                       ),
                   ],
                 ),
-              ],
+                ],
+              ),
             ),
           ),
           actions: [

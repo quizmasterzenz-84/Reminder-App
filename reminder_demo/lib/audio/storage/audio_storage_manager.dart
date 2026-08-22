@@ -6,27 +6,23 @@ import 'package:path_provider/path_provider.dart';
 class AudioStorageManager {
   /// Returns (creating if necessary) `/storage/emulated/0/Music/ReminderApp/`.
   static Future<Directory> getReminderAudioFolder() async {
-    final dirs = await getExternalStorageDirectories(
-      type: StorageDirectory.music,
-    );
+    try {
+      final dirs = await getExternalStorageDirectories(
+        type: StorageDirectory.music,
+      );
 
-    if (dirs == null || dirs.isEmpty) {
-      // Fallback for platforms/emulators without a Music directory (e.g. desktop/test).
-      final appDir = await getApplicationDocumentsDirectory();
-      final fallbackDir = Directory('${appDir.path}/ReminderApp');
-      if (!fallbackDir.existsSync()) {
-        fallbackDir.createSync(recursive: true);
+      if (dirs != null && dirs.isNotEmpty) {
+        final reminderDir = Directory('${dirs.first.path}/ReminderApp');
+        await reminderDir.create(recursive: true);
+        return reminderDir;
       }
-      return fallbackDir;
+    } catch (_) {
+      // Fall through to app-private storage when external storage is unavailable.
     }
 
-    final musicDir = dirs.first;
-    final reminderDir = Directory('${musicDir.path}/ReminderApp');
-
-    if (!reminderDir.existsSync()) {
-      reminderDir.createSync(recursive: true);
-    }
-
-    return reminderDir;
+    final appDir = await getApplicationDocumentsDirectory();
+    final fallbackDir = Directory('${appDir.path}/ReminderApp');
+    await fallbackDir.create(recursive: true);
+    return fallbackDir;
   }
 }
