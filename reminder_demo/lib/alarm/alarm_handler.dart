@@ -11,7 +11,7 @@ class AlarmHandler {
       // Correct API for alarm v3.x
       final audioPath = alarm.assetAudioPath;
 
-      if (audioPath != null && audioPath.isNotEmpty) {
+      if (audioPath.isNotEmpty) {
         _activePlayer?.dispose();
         _activePlayer = AlarmAudioPlayer();
         _activePlayer!.play(audioPath);

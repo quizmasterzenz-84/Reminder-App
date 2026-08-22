@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:alarm/alarm.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:reusable_reminder_kit/reusable_reminder_kit.dart';
@@ -11,7 +13,9 @@ import 'audio/picker/audio_picker.dart';
 import 'audio/recording/voice_recorder.dart';
 import 'audio/system/system_alarm_loader.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Alarm.init();
   AlarmHandler.initialize();
   runApp(const ReminderDemoApp());
 }
@@ -431,15 +435,28 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
         dateTime: updatedReminder.nextTriggerTime,
         audioPath: updatedReminder.audioPath,
       );
-    } catch (_) {
-      // Ignore on platforms/tests where the alarm plugin isn't available.
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not schedule alarm: $error')),
+      );
     }
   }
 
   Future<({String path, String id})?> _pickSystemTone(
     BuildContext dialogContext,
   ) async {
-    final tones = await SystemAlarmLoader.loadSystemAlarmTones();
+    List<FileSystemEntity> tones;
+    try {
+      tones = await SystemAlarmLoader.loadSystemAlarmTones();
+    } catch (error) {
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(dialogContext).showSnackBar(
+          SnackBar(content: Text('Could not load alarm tones: $error')),
+        );
+      }
+      return null;
+    }
     if (!dialogContext.mounted) return null;
     if (tones.isEmpty) {
       ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -472,7 +489,18 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     BuildContext dialogContext,
   ) async {
     final recorder = VoiceRecorder();
-    final started = await recorder.startRecording();
+    String? started;
+    try {
+      started = await recorder.startRecording();
+    } catch (error) {
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(dialogContext).showSnackBar(
+          SnackBar(content: Text('Could not start recording: $error')),
+        );
+      }
+      await recorder.dispose();
+      return null;
+    }
     if (!dialogContext.mounted || started == null) return null;
 
     final stop = await showDialog<bool>(
@@ -492,6 +520,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
 
     if (stop != true) return null;
     final path = await recorder.stopRecording();
+    await recorder.dispose();
     if (path == null) return null;
     return (path: path, id: p.basenameWithoutExtension(path));
   }
