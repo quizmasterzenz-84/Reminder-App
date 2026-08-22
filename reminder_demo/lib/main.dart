@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:alarm/alarm.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:reusable_reminder_kit/reusable_reminder_kit.dart';
 
@@ -122,6 +123,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
   String? _selectedCategoryId;
   late Timer _clockTimer;
   final Set<int> _alreadyNotifiedIds = {};
+  String _appVersion = '';
 
   @override
   void initState() {
@@ -133,6 +135,13 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       _checkForNewlyDueReminders();
       setState(() {});
     });
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (!mounted) return;
+    setState(() => _appVersion = 'v${info.version}+${info.buildNumber}');
   }
 
   @override
@@ -618,7 +627,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reminders'),
+        title: Text(_appVersion.isEmpty ? 'Reminders' : 'Reminders  $_appVersion'),
         actions: [
           IconButton(
             tooltip: 'Where are my recordings stored?',
