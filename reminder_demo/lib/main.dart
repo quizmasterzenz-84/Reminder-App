@@ -453,7 +453,6 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
               ),
             ),
           ),
-        ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
