@@ -14,10 +14,17 @@ class AlarmScheduler {
       // Audio file (user‑recorded or default)
       assetAudioPath: audioPath ?? "",
 
+      // Alarm behaviour: loop, vibrate, volume control
+      loopAudio: true,
+      vibrate: true,
+      volume: 0.8,
+
       // Required in alarm v3.x
       notificationTitle: "Reminder",
       notificationBody: "Your reminder is ringing",
-    );
+
+      // Android: full-screen intent (wakes device from sleep)
+      androidFullScreenIntent: true,
 
     await Alarm.set(alarmSettings: settings);
   }

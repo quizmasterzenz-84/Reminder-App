@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:record/record.dart';
 
@@ -21,13 +22,23 @@ class VoiceRecorder {
       throw Exception("Microphone permission not granted");
     }
 
-    final folder = await AudioStorageManager.getReminderAudioFolder();
-    final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    final path = p.join(folder.path, fileName);
+    // Prevent double-start crash
+    if (await _recorder.isRecording()) {
+      await _recorder.stop();
+    }
 
+    final folder = await AudioStorageManager.getReminderAudioFolder();
+    if (!folder.existsSync()) {
+      await folder.create(recursive: true);
+    }
+
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    // Try AAC first (supported in your version)
     try {
+      final path = p.join(folder.path, 'voice_$timestamp.m4a');
       await _recorder.start(
-        const RecordConfig(
+        RecordConfig(
           encoder: AudioEncoder.aacLc,
           bitRate: 128000,
           sampleRate: 44100,
@@ -35,7 +46,24 @@ class VoiceRecorder {
         path: path,
       );
       return path;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AAC record failed: $e');
+    }
+
+    // Fallback to WAV (your version supports WAV encoder)
+    try {
+      final path = p.join(folder.path, 'voice_$timestamp.wav');
+      await _recorder.start(
+        RecordConfig(
+          encoder: AudioEncoder.wav,
+          bitRate: 128000,
+          sampleRate: 44100,
+        ),
+        path: path,
+      );
+      return path;
+    } catch (e) {
+      debugPrint('WAV record failed: $e');
       return null;
     }
   }
@@ -43,7 +71,8 @@ class VoiceRecorder {
   Future<String?> stopRecording() async {
     try {
       return await _recorder.stop();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Stop failed: $e');
       return null;
     }
   }
@@ -51,13 +80,14 @@ class VoiceRecorder {
   Future<Stream<Uint8List>?> startStream() async {
     try {
       return await _recorder.startStream(
-        const RecordConfig(
+        RecordConfig(
           encoder: AudioEncoder.wav,
-          sampleRate: 44100,
           bitRate: 128000,
+          sampleRate: 44100,
         ),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Stream start failed: $e');
       return null;
     }
   }
@@ -65,12 +95,16 @@ class VoiceRecorder {
   Future<void> stopStream() async {
     try {
       await _recorder.stop();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Stream stop failed: $e');
+    }
   }
 
   Future<void> dispose() async {
     try {
       await _recorder.dispose();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Dispose failed: $e');
+    }
   }
 }

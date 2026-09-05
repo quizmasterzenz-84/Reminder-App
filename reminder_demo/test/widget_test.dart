@@ -18,4 +18,16 @@ void main() {
     expect(find.text('Your reminders'), findsOneWidget);
     expect(find.text('Next 14 days'), findsOneWidget);
   });
+
+  testWidgets('shows audio controls in the reminder dialog', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ReminderDemoApp());
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('System tone'), findsOneWidget);
+    expect(find.text('Record voice'), findsOneWidget);
+    expect(find.text('Pick file'), findsOneWidget);
+  });
 }
