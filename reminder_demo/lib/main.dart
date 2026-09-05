@@ -252,14 +252,15 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
           title: Text(editing == null ? 'Add reminder' : 'Edit reminder'),
           content: SizedBox(
             width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 TextField(
                   controller: titleController,
-                  autofocus: true,
                   decoration: const InputDecoration(labelText: 'Title'),
                 ),
                 const SizedBox(height: 12),
@@ -448,6 +449,8 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                   },
                 ),
               ],
+                ),
+              ),
             ),
           ),
         ),
