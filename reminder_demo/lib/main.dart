@@ -333,7 +333,6 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                     if (constraints.maxWidth < 300) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
-                        spacing: 8,
                         children: [
                           OutlinedButton.icon(
                             icon: const Icon(Icons.alarm),
@@ -348,6 +347,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                               }
                             },
                           ),
+                          const SizedBox(height: 8),
                           OutlinedButton.icon(
                             icon: const Icon(Icons.mic),
                             label: const Text('Record voice'),
@@ -361,6 +361,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                               }
                             },
                           ),
+                          const SizedBox(height: 8),
                           OutlinedButton.icon(
                             icon: const Icon(Icons.folder_open),
                             label: const Text('Pick file'),
@@ -374,10 +375,17 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                               }
                             },
                           ),
-                          if (audioPath != null)
+                          if (audioPath != null) ...[
+                            const SizedBox(height: 8),
                             OutlinedButton.icon(
                               icon: const Icon(Icons.clear),
                               label: const Text('Clear'),
+                              onPressed: () => setDialogState(() {
+                                audioPath = null;
+                                audioId = null;
+                              }),
+                            ),
+                          ],
                               onPressed: () => setDialogState(() {
                                 audioPath = null;
                                 audioId = null;
