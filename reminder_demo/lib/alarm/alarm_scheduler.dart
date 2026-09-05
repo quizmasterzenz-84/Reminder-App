@@ -25,6 +25,7 @@ class AlarmScheduler {
 
       // Android: full-screen intent (wakes device from sleep)
       androidFullScreenIntent: true,
+    );
 
     await Alarm.set(alarmSettings: settings);
   }
