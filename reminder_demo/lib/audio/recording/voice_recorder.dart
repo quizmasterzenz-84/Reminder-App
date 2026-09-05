@@ -9,7 +9,7 @@ class VoiceRecorder {
 
   Future<bool> _checkPermission() async {
     try {
-      return await _recorder.hasPermission();
+      return await _recorder.hasPermission(request: true);
     } catch (_) {
       return false;
     }
@@ -27,7 +27,11 @@ class VoiceRecorder {
 
     try {
       await _recorder.start(
-        const RecordConfig(encoder: AudioEncoder.aacLc),
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+        ),
         path: path,
       );
       return path;

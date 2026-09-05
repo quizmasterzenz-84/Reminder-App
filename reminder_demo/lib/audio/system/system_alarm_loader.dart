@@ -13,7 +13,11 @@ class SystemAlarmLoader {
     for (final dir in _systemDirs) {
       final directory = Directory(dir);
       if (directory.existsSync()) {
-        tones.addAll(directory.listSync());
+        try {
+          tones.addAll(directory.listSync());
+        } catch (_) {
+          // Silently skip directories that cannot be read on some devices
+        }
       }
     }
 

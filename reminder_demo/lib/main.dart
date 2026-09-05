@@ -250,10 +250,12 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text(editing == null ? 'Add reminder' : 'Edit reminder'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 TextField(
                   controller: titleController,
@@ -325,63 +327,127 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 4),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.alarm),
-                      label: const Text('System tone'),
-                      onPressed: () async {
-                        final picked = await _pickSystemTone(context);
-                        if (picked != null) {
-                          setDialogState(() {
-                            audioPath = picked.path;
-                            audioId = picked.id;
-                          });
-                        }
-                      },
-                    ),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.mic),
-                      label: const Text('Record voice'),
-                      onPressed: () async {
-                        final recorded = await _recordVoiceMessage(context);
-                        if (recorded != null) {
-                          setDialogState(() {
-                            audioPath = recorded.path;
-                            audioId = recorded.id;
-                          });
-                        }
-                      },
-                    ),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.folder_open),
-                      label: const Text('Pick file'),
-                      onPressed: () async {
-                        final picked = await AudioPicker.pickAudioFile();
-                        if (picked != null) {
-                          setDialogState(() {
-                            audioPath = picked.path;
-                            audioId = picked.id;
-                          });
-                        }
-                      },
-                    ),
-                    if (audioPath != null)
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.clear),
-                        label: const Text('Clear'),
-                        onPressed: () => setDialogState(() {
-                          audioPath = null;
-                          audioId = null;
-                        }),
-                      ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    // On narrow screens (mobile), stack buttons vertically
+                    if (constraints.maxWidth < 300) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        spacing: 8,
+                        children: [
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.alarm),
+                            label: const Text('System tone'),
+                            onPressed: () async {
+                              final picked = await _pickSystemTone(context);
+                              if (picked != null) {
+                                setDialogState(() {
+                                  audioPath = picked.path;
+                                  audioId = picked.id;
+                                });
+                              }
+                            },
+                          ),
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.mic),
+                            label: const Text('Record voice'),
+                            onPressed: () async {
+                              final recorded = await _recordVoiceMessage(context);
+                              if (recorded != null) {
+                                setDialogState(() {
+                                  audioPath = recorded.path;
+                                  audioId = recorded.id;
+                                });
+                              }
+                            },
+                          ),
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.folder_open),
+                            label: const Text('Pick file'),
+                            onPressed: () async {
+                              final picked = await AudioPicker.pickAudioFile();
+                              if (picked != null) {
+                                setDialogState(() {
+                                  audioPath = picked.path;
+                                  audioId = picked.id;
+                                });
+                              }
+                            },
+                          ),
+                          if (audioPath != null)
+                            OutlinedButton.icon(
+                              icon: const Icon(Icons.clear),
+                              label: const Text('Clear'),
+                              onPressed: () => setDialogState(() {
+                                audioPath = null;
+                                audioId = null;
+                              }),
+                            ),
+                        ],
+                      );
+                    }
+                    // On wider screens, use Wrap for horizontal layout
+                    return Wrap(
+                      alignment: WrapAlignment.start,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.alarm),
+                          label: const Text('System tone'),
+                          onPressed: () async {
+                            final picked = await _pickSystemTone(context);
+                            if (picked != null) {
+                              setDialogState(() {
+                                audioPath = picked.path;
+                                audioId = picked.id;
+                              });
+                            }
+                          },
+                        ),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.mic),
+                          label: const Text('Record voice'),
+                          onPressed: () async {
+                            final recorded = await _recordVoiceMessage(context);
+                            if (recorded != null) {
+                              setDialogState(() {
+                                audioPath = recorded.path;
+                                audioId = recorded.id;
+                              });
+                            }
+                          },
+                        ),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.folder_open),
+                          label: const Text('Pick file'),
+                          onPressed: () async {
+                            final picked = await AudioPicker.pickAudioFile();
+                            if (picked != null) {
+                              setDialogState(() {
+                                audioPath = picked.path;
+                                audioId = picked.id;
+                              });
+                            }
+                          },
+                        ),
+                        if (audioPath != null)
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.clear),
+                            label: const Text('Clear'),
+                            onPressed: () => setDialogState(() {
+                              audioPath = null;
+                              audioId = null;
+                            }),
+                          ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
           ),
+        ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
