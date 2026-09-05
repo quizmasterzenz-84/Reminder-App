@@ -386,11 +386,6 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                               }),
                             ),
                           ],
-                              onPressed: () => setDialogState(() {
-                                audioPath = null;
-                                audioId = null;
-                              }),
-                            ),
                         ],
                       );
                     }
