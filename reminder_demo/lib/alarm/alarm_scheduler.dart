@@ -1,10 +1,24 @@
 import 'package:alarm/alarm.dart';
+import 'package:flutter/services.dart';
 
 import 'alarm_handler.dart';
 import '../audio/system/system_alarm_loader.dart';
 
 /// Schedules a native alarm (survives app kill, shows full-screen intent) for a reminder.
 class AlarmScheduler {
+  static const MethodChannel _exactAlarmChannel = MethodChannel(
+    'reminder_demo/exact_alarms',
+  );
+
+  static Future<bool> ensureExactAlarmPermission() async {
+    try {
+      return await _exactAlarmChannel.invokeMethod<bool>('ensurePermission') ??
+          true;
+    } on MissingPluginException {
+      return true;
+    }
+  }
+
   static Future<void> scheduleReminder({
     required int id,
     required DateTime dateTime,

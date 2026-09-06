@@ -406,6 +406,19 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     debugPrint(
       'ReminderFlow: opening ${editing == null ? 'add' : 'edit'} dialog',
     );
+    final hasExactAlarmPermission =
+        await AlarmScheduler.ensureExactAlarmPermission();
+    if (!hasExactAlarmPermission) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Allow Alarms & reminders, then add the reminder again.',
+          ),
+        ),
+      );
+      return;
+    }
     final titleController = TextEditingController(text: editing?.title);
     final snoozeController = TextEditingController(text: editing?.snoozeLabel);
     String? categoryId = editing?.categoryId ??
