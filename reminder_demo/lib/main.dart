@@ -306,10 +306,8 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       path: path,
       tag: tag,
     );
-    setState(() {
-      _audioLibrary.removeWhere((item) => item.path == path);
-      _audioLibrary.add(entry);
-    });
+    _audioLibrary.removeWhere((item) => item.path == path);
+    _audioLibrary.add(entry);
     await _saveAudioLibrary();
   }
 
@@ -627,6 +625,8 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                                 path: recorded.path,
                                 tag: tag,
                               );
+                              if (!context.mounted) return;
+                              if (!context.mounted) return;
                               setDialogState(() {
                                 audioPath = recorded.path;
                                 audioId = tag;
@@ -857,7 +857,11 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       ),
     );
 
-    if (stop != true) return null;
+    if (stop != true) {
+      await recorder.stopRecording();
+      await recorder.dispose();
+      return null;
+    }
     final path = await recorder.stopRecording();
     await recorder.dispose();
     if (path == null) return null;
