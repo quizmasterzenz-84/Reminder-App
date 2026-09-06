@@ -252,10 +252,8 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
           title: Text(editing == null ? 'Add reminder' : 'Edit reminder'),
           content: SizedBox(
             width: double.maxFinite,
-            child: Scrollbar(
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                child: Column(
+            child: SingleChildScrollView(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -449,7 +447,6 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                   },
                 ),
               ],
-                ),
               ),
             ),
           ),
