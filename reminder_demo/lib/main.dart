@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:alarm/alarm.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:reusable_reminder_kit/reusable_reminder_kit.dart';
 
 import 'alarm/alarm_handler.dart';
@@ -13,6 +15,7 @@ import 'alarm/alarm_scheduler.dart';
 import 'audio/cleanup/audio_cleanup_service.dart';
 import 'audio/picker/audio_picker.dart';
 import 'audio/recording/voice_recorder.dart';
+import 'audio/storage/audio_storage_manager.dart';
 import 'audio/system/system_alarm_loader.dart';
 
 Future<void> main() async {
@@ -66,6 +69,62 @@ class _Reminder {
     this.audioPath,
     this.audioId,
   });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'categoryId': categoryId,
+        'categoryName': categoryName,
+        'importance': importance.index,
+        'title': title,
+        'nextTriggerTime': nextTriggerTime.toIso8601String(),
+        'finalTime': finalTime?.toIso8601String(),
+        'snoozeLabel': snoozeLabel,
+        'audioPath': audioPath,
+        'audioId': audioId,
+      };
+
+  static _Reminder? fromJson(Map<String, dynamic> json) {
+    try {
+      final importanceIndex = json['importance'] as int;
+      if (importanceIndex < 0 || importanceIndex >= Importance.values.length) {
+        return null;
+      }
+      return _Reminder(
+        id: json['id'] as int,
+        categoryId: json['categoryId'] as String,
+        categoryName: json['categoryName'] as String,
+        importance: Importance.values[importanceIndex],
+        title: json['title'] as String,
+        nextTriggerTime: DateTime.parse(json['nextTriggerTime'] as String),
+        finalTime: json['finalTime'] == null
+            ? null
+            : DateTime.parse(json['finalTime'] as String),
+        snoozeLabel: json['snoozeLabel'] as String?,
+        audioPath: json['audioPath'] as String?,
+        audioId: json['audioId'] as String?,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+class _AudioEntry {
+  final String id;
+  final String path;
+  final String tag;
+
+  const _AudioEntry({required this.id, required this.path, required this.tag});
+
+  Map<String, dynamic> toJson() => {'id': id, 'path': path, 'tag': tag};
+
+  static _AudioEntry? fromJson(Map<String, dynamic> json) {
+    final id = json['id'];
+    final path = json['path'];
+    final tag = json['tag'];
+    if (id is! String || path is! String || tag is! String) return null;
+    return _AudioEntry(id: id, path: path, tag: tag);
+  }
 }
 
 class ReminderHomePage extends StatefulWidget {
@@ -89,37 +148,11 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     const FilterOption<int>('Next 30 days', 30),
   ];
 
-  late final List<_Reminder> _reminders = [
-    _Reminder(
-      id: 1,
-      categoryId: 'work',
-      categoryName: 'Work',
-      importance: Importance.high,
-      title: 'Client follow-up',
-      nextTriggerTime: DateTime.now().add(const Duration(days: 3)),
-      finalTime: DateTime.now().add(const Duration(days: 17)),
-      snoozeLabel: '10 min',
-    ),
-    _Reminder(
-      id: 2,
-      categoryId: 'health',
-      categoryName: 'Health',
-      importance: Importance.medium,
-      title: 'Take medicine',
-      nextTriggerTime: DateTime.now().add(const Duration(hours: 2)),
-      snoozeLabel: '5 min',
-    ),
-    _Reminder(
-      id: 3,
-      categoryId: 'home',
-      categoryName: 'Home',
-      importance: Importance.low,
-      title: 'Water the plants',
-      nextTriggerTime: DateTime.now().add(const Duration(days: 6)),
-    ),
-  ];
+  final List<_Reminder> _reminders = [];
+  final List<_AudioEntry> _audioLibrary = [];
 
-  int _nextId = 4;
+  int _nextId = 1;
+  bool _isLoadingReminders = true;
   int _selectedDays = 14;
   String? _selectedCategoryId;
   late Timer _clockTimer;
@@ -137,6 +170,147 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       setState(() {});
     });
     _loadAppVersion();
+    _loadReminders();
+    _loadAudioLibrary();
+  }
+
+  Future<File> _remindersFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return File(p.join(directory.path, 'reminders.json'));
+  }
+
+  Future<void> _loadReminders() async {
+    try {
+      final file = await _remindersFile();
+      if (await file.exists()) {
+        final decoded = jsonDecode(await file.readAsString());
+        if (decoded is List) {
+          final loaded = decoded
+              .whereType<Map>()
+              .map((item) => _Reminder.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ))
+              .whereType<_Reminder>()
+              .toList();
+          _reminders
+            ..clear()
+            ..addAll(loaded);
+          if (loaded.isNotEmpty) {
+            _nextId = loaded.map((reminder) => reminder.id).reduce(
+                  (largest, id) => id > largest ? id : largest,
+                ) +
+                1;
+            for (final reminder in loaded) {
+              if (reminder.nextTriggerTime.isAfter(DateTime.now())) {
+                await AlarmScheduler.scheduleReminder(
+                  id: reminder.id,
+                  dateTime: reminder.nextTriggerTime,
+                  audioPath: reminder.audioPath,
+                );
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      debugPrint('ReminderStorage: unable to load reminders: $error');
+    }
+    if (!mounted) return;
+    setState(() => _isLoadingReminders = false);
+  }
+
+  Future<void> _saveReminders() async {
+    try {
+      final file = await _remindersFile();
+      await file.writeAsString(jsonEncode(
+        _reminders.map((reminder) => reminder.toJson()).toList(),
+      ));
+    } catch (error) {
+      debugPrint('ReminderStorage: unable to save reminders: $error');
+    }
+  }
+
+  Future<File> _audioLibraryFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return File(p.join(directory.path, 'audio_library.json'));
+  }
+
+  Future<void> _loadAudioLibrary() async {
+    try {
+      final file = await _audioLibraryFile();
+      if (await file.exists()) {
+        final decoded = jsonDecode(await file.readAsString());
+        if (decoded is List) {
+          _audioLibrary
+            ..clear()
+            ..addAll(decoded
+                .whereType<Map>()
+                .map((item) => _AudioEntry.fromJson(
+                      Map<String, dynamic>.from(item),
+                    ))
+                .whereType<_AudioEntry>());
+        }
+      }
+    } catch (error) {
+      debugPrint('AudioLibrary: unable to load: $error');
+    }
+  }
+
+  Future<void> _saveAudioLibrary() async {
+    try {
+      final file = await _audioLibraryFile();
+      await file.writeAsString(jsonEncode(
+        _audioLibrary.map((entry) => entry.toJson()).toList(),
+      ));
+    } catch (error) {
+      debugPrint('AudioLibrary: unable to save: $error');
+    }
+  }
+
+  Future<String?> _askAudioTag(BuildContext dialogContext) async {
+    final controller = TextEditingController();
+    final tag = await showDialog<String>(
+      context: dialogContext,
+      builder: (context) => AlertDialog(
+        title: const Text('Name voice message'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Tag',
+            hintText: 'e.g. Dentist appointment',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final value = controller.text.trim();
+              if (value.isNotEmpty) Navigator.of(context).pop(value);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return tag;
+  }
+
+  Future<void> _addAudioEntry({required String path, required String tag}) async {
+    final entry = _AudioEntry(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      path: path,
+      tag: tag,
+    );
+    setState(() {
+      _audioLibrary.removeWhere((item) => item.path == path);
+      _audioLibrary.add(entry);
+    });
+    await _saveAudioLibrary();
   }
 
   Future<void> _loadAppVersion() async {
@@ -345,15 +519,35 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                           ),
                           const SizedBox(height: 8),
                           OutlinedButton.icon(
+                            icon: const Icon(Icons.library_music),
+                            label: const Text('Saved audio'),
+                            onPressed: () async {
+                              final saved = await _pickSavedAudio(context);
+                              if (saved != null) {
+                                setDialogState(() {
+                                  audioPath = saved.path;
+                                  audioId = saved.tag;
+                                });
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
                             icon: const Icon(Icons.mic),
                             label: const Text('Record voice'),
                             onPressed: () async {
                               debugPrint('ReminderFlow: record voice tapped');
                               final recorded = await _recordVoiceMessage(context);
                               if (recorded != null) {
+                                final tag = await _askAudioTag(context);
+                                if (tag == null) return;
+                                await _addAudioEntry(
+                                  path: recorded.path,
+                                  tag: tag,
+                                );
                                 setDialogState(() {
                                   audioPath = recorded.path;
-                                  audioId = recorded.id;
+                                  audioId = tag;
                                 });
                               }
                             },
@@ -408,15 +602,34 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                           },
                         ),
                         OutlinedButton.icon(
+                          icon: const Icon(Icons.library_music),
+                          label: const Text('Saved audio'),
+                          onPressed: () async {
+                            final saved = await _pickSavedAudio(context);
+                            if (saved != null) {
+                              setDialogState(() {
+                                audioPath = saved.path;
+                                audioId = saved.tag;
+                              });
+                            }
+                          },
+                        ),
+                        OutlinedButton.icon(
                           icon: const Icon(Icons.mic),
                           label: const Text('Record voice'),
                           onPressed: () async {
                             debugPrint('ReminderFlow: record voice tapped');
                             final recorded = await _recordVoiceMessage(context);
                             if (recorded != null) {
+                              final tag = await _askAudioTag(context);
+                              if (tag == null) return;
+                              await _addAudioEntry(
+                                path: recorded.path,
+                                tag: tag,
+                              );
                               setDialogState(() {
                                 audioPath = recorded.path;
-                                audioId = recorded.id;
+                                audioId = tag;
                               });
                             }
                           },
@@ -519,6 +732,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
         _alreadyNotifiedIds.remove(editing.id);
       }
     });
+    await _saveReminders();
 
     // Best-effort: native alarm scheduling only works on a real Android build.
     try {
@@ -647,7 +861,100 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     final path = await recorder.stopRecording();
     await recorder.dispose();
     if (path == null) return null;
+    await AudioStorageManager.exportToPublicMusic(path);
     return (path: path, id: p.basenameWithoutExtension(path));
+  }
+
+  Future<({String path, String tag})?> _pickSavedAudio(
+    BuildContext dialogContext,
+  ) async {
+    final available = _audioLibrary
+        .where((entry) => File(entry.path).existsSync())
+        .toList();
+    if (available.isEmpty) {
+      await _showAudioDialogMessage(
+        dialogContext,
+        title: 'No saved audio',
+        message: 'Record a voice message first, then save it with a tag.',
+      );
+      return null;
+    }
+
+    return showDialog<({String path, String tag})>(
+      context: dialogContext,
+      builder: (context) => SimpleDialog(
+        title: const Text('Choose saved audio'),
+        children: [
+          for (final entry in available)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(
+                (path: entry.path, tag: entry.tag),
+              ),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(entry.tag),
+                subtitle: Text(p.basename(entry.path)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAudioLibrary() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Saved voice messages'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: _audioLibrary.isEmpty
+                ? const Text('No saved voice messages yet.')
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _audioLibrary.length,
+                    itemBuilder: (context, index) {
+                      final entry = _audioLibrary[index];
+                      final usedBy = _reminders
+                          .where((reminder) => reminder.audioPath == entry.path)
+                          .map((reminder) => reminder.title)
+                          .toList();
+                      return ListTile(
+                        title: Text(entry.tag),
+                        subtitle: Text(
+                          usedBy.isEmpty
+                              ? p.basename(entry.path)
+                              : 'Used by: ${usedBy.join(', ')}',
+                        ),
+                        trailing: IconButton(
+                          tooltip: usedBy.isEmpty
+                              ? 'Delete recording'
+                              : 'Used by a reminder',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: usedBy.isNotEmpty
+                              ? null
+                              : () async {
+                                  final file = File(entry.path);
+                                  if (await file.exists()) await file.delete();
+                                  setState(() => _audioLibrary.removeAt(index));
+                                  setDialogState(() {});
+                                  await _saveAudioLibrary();
+                                },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _showReminderDetails(_Reminder reminder) async {
@@ -724,6 +1031,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
         _reminders.removeWhere((r) => r.id == reminder.id);
         _alreadyNotifiedIds.remove(reminder.id);
       });
+      await _saveReminders();
     }
   }
 
@@ -745,6 +1053,11 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       appBar: AppBar(
         title: Text(_appVersion.isEmpty ? 'Reminders' : 'Reminders  $_appVersion'),
         actions: [
+          IconButton(
+            tooltip: 'Saved voice messages',
+            icon: const Icon(Icons.library_music_outlined),
+            onPressed: _showAudioLibrary,
+          ),
           IconButton(
             tooltip: 'Where are my recordings stored?',
             icon: const Icon(Icons.folder_outlined),
@@ -820,33 +1133,63 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
               onAddNewCategory: _addCategory,
             ),
             const SizedBox(height: 24),
-            if (visibleReminders.isEmpty)
+            if (_isLoadingReminders)
+              const Center(child: CircularProgressIndicator())
+            else if (visibleReminders.isEmpty)
               EmptyStateView(
                 icon: Icons.event_busy,
-                title: 'No reminders match this filter',
-                message:
-                    'Change the category or time window, or add a new reminder.',
-                actionLabel: 'Reset filters',
+                title: _reminders.isEmpty
+                    ? 'No reminders yet'
+                    : 'No reminders match this filter',
+                message: _reminders.isEmpty
+                    ? 'Add a reminder to get started.'
+                    : 'Change the category or time window, or add a new reminder.',
+                actionLabel: _reminders.isEmpty ? 'Add reminder' : 'Reset filters',
                 onAction: () {
-                  setState(() {
-                    _selectedDays = 14;
-                    _selectedCategoryId = null;
-                  });
+                  if (_reminders.isEmpty) {
+                    _addReminder();
+                  } else {
+                    setState(() {
+                      _selectedDays = 14;
+                      _selectedCategoryId = null;
+                    });
+                  }
                 },
               )
             else
               ...visibleReminders.map(
                 (reminder) => Card(
                   margin: const EdgeInsets.only(bottom: 12),
-                  child: ReminderListTile(
-                    category: reminder.categoryName,
-                    importance: reminder.importance,
-                    title: reminder.title,
-                    nextTriggerTime: reminder.nextTriggerTime,
-                    finalTime: reminder.finalTime,
-                    snoozeLabel: reminder.snoozeLabel,
-                    isDue: !reminder.nextTriggerTime.isAfter(now),
-                    onTap: () => _showReminderDetails(reminder),
+                  child: Column(
+                    children: [
+                      ReminderListTile(
+                        category: reminder.categoryName,
+                        importance: reminder.importance,
+                        title: reminder.title,
+                        nextTriggerTime: reminder.nextTriggerTime,
+                        finalTime: reminder.finalTime,
+                        snoozeLabel: reminder.snoozeLabel,
+                        isDue: !reminder.nextTriggerTime.isAfter(now),
+                        onTap: () => _showReminderDetails(reminder),
+                      ),
+                      if (reminder.audioId != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.mic_none, size: 16),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Audio: ${reminder.audioId}',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),

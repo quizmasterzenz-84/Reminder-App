@@ -1,9 +1,27 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Manages the app's dedicated folder for user-recorded voice reminders.
 class AudioStorageManager {
+  static const MethodChannel _exportChannel = MethodChannel(
+    'reminder_demo/audio_export',
+  );
+
+  static Future<bool> exportToPublicMusic(String path) async {
+    try {
+      return await _exportChannel.invokeMethod<bool>('exportToPublicMusic', {
+            'path': path,
+            'displayName': path.split('/').last,
+          }) ??
+          false;
+    } on PlatformException catch (error) {
+      debugPrint('Audio export unavailable: $error');
+      return false;
+    }
+  }
+
   /// Returns (creating if necessary) `/storage/emulated/0/Music/ReminderApp/`.
   static Future<Directory> getReminderAudioFolder() async {
     try {
