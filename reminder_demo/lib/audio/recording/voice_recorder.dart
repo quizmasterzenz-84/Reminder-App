@@ -16,6 +16,7 @@ class VoiceRecorder {
   }
 
   Future<String?> startRecording() async {
+    final stopwatch = Stopwatch()..start();
     final hasPerm = await _checkPermission();
     if (!hasPerm) {
       throw Exception("Microphone permission not granted");
@@ -27,9 +28,6 @@ class VoiceRecorder {
     }
 
     final folder = await AudioStorageManager.getReminderAudioFolder();
-    if (!folder.existsSync()) {
-      await folder.create(recursive: true);
-    }
 
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
@@ -43,6 +41,10 @@ class VoiceRecorder {
           sampleRate: 44100,
         ),
         path: path,
+      );
+      debugPrint(
+        'VoiceRecorder: AAC recording started in '
+        '${stopwatch.elapsedMilliseconds}ms',
       );
       return path;
     } catch (e) {
@@ -59,6 +61,10 @@ class VoiceRecorder {
           sampleRate: 44100,
         ),
         path: path,
+      );
+      debugPrint(
+        'VoiceRecorder: WAV recording started in '
+        '${stopwatch.elapsedMilliseconds}ms',
       );
       return path;
     } catch (e) {
