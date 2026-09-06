@@ -46,8 +46,8 @@ class AlarmScheduler {
 
       // Play the selected recording/file once, then let the alarm finish.
       loopAudio: false,
-      // With loopAudio=false the plugin stops vibration when playback ends.
-      vibrate: true,
+      // Voice messages and selected tones play without a separate vibration.
+      vibrate: false,
       volume: 0.8,
 
       // Required in alarm v3.x

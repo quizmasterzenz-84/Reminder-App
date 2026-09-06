@@ -267,39 +267,6 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     }
   }
 
-  Future<String?> _askAudioTag(BuildContext dialogContext) async {
-    final controller = TextEditingController();
-    final tag = await showDialog<String>(
-      context: dialogContext,
-      builder: (context) => AlertDialog(
-        title: const Text('Name voice message'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Tag',
-            hintText: 'e.g. Dentist appointment',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              final value = controller.text.trim();
-              if (value.isNotEmpty) Navigator.of(context).pop(value);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    return tag;
-  }
-
   Future<void> _addAudioEntry({required String path, required String tag}) async {
     final entry = _AudioEntry(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -550,15 +517,14 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                               debugPrint('ReminderFlow: record voice tapped');
                               final recorded = await _recordVoiceMessage(context);
                               if (recorded != null) {
-                                final tag = await _askAudioTag(context);
-                                if (tag == null) return;
                                 await _addAudioEntry(
                                   path: recorded.path,
-                                  tag: tag,
+                                  tag: recorded.tag,
                                 );
+                                if (!context.mounted) return;
                                 setDialogState(() {
                                   audioPath = recorded.path;
-                                  audioId = tag;
+                                  audioId = recorded.tag;
                                 });
                               }
                             },
@@ -632,17 +598,14 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                             debugPrint('ReminderFlow: record voice tapped');
                             final recorded = await _recordVoiceMessage(context);
                             if (recorded != null) {
-                              final tag = await _askAudioTag(context);
-                              if (tag == null) return;
                               await _addAudioEntry(
                                 path: recorded.path,
-                                tag: tag,
+                                tag: recorded.tag,
                               );
-                              if (!context.mounted) return;
                               if (!context.mounted) return;
                               setDialogState(() {
                                 audioPath = recorded.path;
-                                audioId = tag;
+                                audioId = recorded.tag;
                               });
                             }
                           },
@@ -835,7 +798,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     );
   }
 
-  Future<({String path, String id})?> _recordVoiceMessage(
+  Future<({String path, String tag})?> _recordVoiceMessage(
     BuildContext dialogContext,
   ) async {
     final recorder = VoiceRecorder();
@@ -855,22 +818,42 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     }
     if (!dialogContext.mounted || started == null) return null;
 
-    final stop = await showDialog<bool>(
+    final tagController = TextEditingController();
+    final result = await showDialog<({bool stop, String tag})>(
       context: dialogContext,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Recording\u2026'),
-        content: const Text('Tap stop when you\'re done.'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Tap stop when you\'re done.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: tagController,
+              decoration: const InputDecoration(
+                labelText: 'Voice message name',
+                hintText: 'e.g. Dentist appointment',
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () {
+              final tag = tagController.text.trim();
+              if (tag.isNotEmpty) {
+                Navigator.of(context).pop((stop: true, tag: tag));
+              }
+            },
             child: const Text('Stop'),
           ),
         ],
       ),
     );
 
-    if (stop != true) {
+    tagController.dispose();
+    if (result == null || !result.stop) {
       await recorder.stopRecording();
       await recorder.dispose();
       return null;
@@ -879,7 +862,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     await recorder.dispose();
     if (path == null) return null;
     await AudioStorageManager.exportToPublicMusic(path);
-    return (path: path, id: p.basenameWithoutExtension(path));
+    return (path: path, tag: result.tag);
   }
 
   Future<({String path, String tag})?> _pickSavedAudio(
