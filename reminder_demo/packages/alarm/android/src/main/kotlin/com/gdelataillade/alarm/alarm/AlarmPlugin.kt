@@ -90,6 +90,7 @@ class AlarmPlugin: FlutterPlugin, MethodCallHandler {
                 // Cancel the future alarm using AlarmManager
                 val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
                 alarmManager.cancel(pendingIntent)
+                AlarmScheduleStore.remove(context, id)
 
                 result.success(true)
             }
@@ -150,23 +151,8 @@ class AlarmPlugin: FlutterPlugin, MethodCallHandler {
     fun handleDelayedAlarm(context: Context, intent: Intent, delayInSeconds: Int, id: Int) {
         try {
             val triggerTime = System.currentTimeMillis() + delayInSeconds * 1000L
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                id,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
-                ?: throw IllegalStateException("AlarmManager not available")
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
-            } else {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
-            }
+            AlarmScheduleStore.save(context, id, triggerTime, intent)
+            AlarmScheduleStore.schedule(context, id, triggerTime, intent)
         } catch (e: ClassCastException) {
             Log.e("AlarmPlugin", "AlarmManager service type casting failed", e)
         } catch (e: IllegalStateException) {

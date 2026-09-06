@@ -9,6 +9,7 @@ import io.flutter.Log
 
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        AlarmScheduleStore.remove(context, intent.getIntExtra("id", 0))
         val serviceIntent = Intent(context, AlarmService::class.java)
         serviceIntent.putExtras(intent)
 
