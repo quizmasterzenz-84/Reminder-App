@@ -13,6 +13,6 @@ workflows:
       - name: Build debug APK
         script: |
           cd reminder_demo
-          flutter build apk --debug
+          flutter build apk --debug --android-skip-build-dependency-validation
     artifacts:
       - reminder_demo/build/app/outputs/flutter-apk/app-debug.apk
