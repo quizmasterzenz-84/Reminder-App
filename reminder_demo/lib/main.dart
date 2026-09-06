@@ -15,7 +15,6 @@ import 'alarm/alarm_scheduler.dart';
 import 'audio/cleanup/audio_cleanup_service.dart';
 import 'audio/picker/audio_picker.dart';
 import 'audio/recording/voice_recorder.dart';
-import 'audio/storage/audio_storage_manager.dart';
 import 'audio/system/system_alarm_loader.dart';
 
 Future<void> main() async {
@@ -702,9 +701,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     // Schedule first so an unscheduled reminder is never persisted to the UI.
     try {
       debugPrint(
-        'ReminderFlow: scheduling id=${updatedReminder.id} '
-        'at=${updatedReminder.nextTriggerTime.toIso8601String()} '
-        'audio=${updatedReminder.audioPath ?? 'default'}',
+        'ReminderFlow: scheduling id=${updatedReminder.id}',
       );
       await AlarmScheduler.scheduleReminder(
         id: updatedReminder.id,
@@ -862,7 +859,6 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     final path = await recorder.stopRecording();
     await recorder.dispose();
     if (path == null) return null;
-    await AudioStorageManager.exportToPublicMusic(path);
     return (path: path, tag: result.tag);
   }
 
@@ -1060,18 +1056,17 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
             onPressed: _showAudioLibrary,
           ),
           IconButton(
-            tooltip: 'Where are my recordings stored?',
+            tooltip: 'Recording privacy',
             icon: const Icon(Icons.folder_outlined),
             onPressed: () {
               showDialog<void>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Where are my recorded messages stored?'),
+                  title: const Text('Recording privacy'),
                   content: const Text(
-                    'Your recorded reminder messages are saved in your '
-                    "phone's Music folder.\n\n"
-                    'To view or delete them:\n'
-                    'Open File Manager → Audio → Music → ReminderApp',
+                    'Your recorded reminder messages are stored privately '
+                    'inside this app. Use Saved voice messages to reuse or '
+                    'delete them.',
                   ),
                   actions: [
                     TextButton(
