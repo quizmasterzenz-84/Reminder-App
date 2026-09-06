@@ -309,14 +309,6 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                   },
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: snoozeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Snooze label (optional)',
-                    hintText: 'e.g. 5 min',
-                  ),
-                ),
-                const SizedBox(height: 12),
                 Text(
                   'Alarm sound',
                   style: Theme.of(context).textTheme.labelLarge,
@@ -445,6 +437,14 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                       ],
                     );
                   },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: snoozeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Snooze label (optional)',
+                    hintText: 'e.g. 5 min',
+                  ),
                 ),
               ],
             ),
