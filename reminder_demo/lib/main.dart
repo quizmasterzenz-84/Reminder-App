@@ -523,6 +523,26 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     }
   }
 
+  Future<void> _showAudioDialogMessage(
+    BuildContext dialogContext, {
+    required String title,
+    required String message,
+  }) {
+    return showDialog<void>(
+      context: dialogContext,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<({String path, String id})?> _pickSystemTone(
     BuildContext dialogContext,
   ) async {
@@ -531,18 +551,22 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       tones = await SystemAlarmLoader.loadSystemAlarmTones();
     } catch (error) {
       if (dialogContext.mounted) {
-        ScaffoldMessenger.of(dialogContext).showSnackBar(
-          SnackBar(content: Text('Could not load alarm tones: $error')),
+        await _showAudioDialogMessage(
+          dialogContext,
+          title: 'System tones unavailable',
+          message: 'Could not load alarm tones: $error',
         );
       }
       return null;
     }
     if (!dialogContext.mounted) return null;
     if (tones.isEmpty) {
-      ScaffoldMessenger.of(dialogContext).showSnackBar(
-        const SnackBar(
-          content: Text('No system alarm tones found on this device.'),
-        ),
+      await _showAudioDialogMessage(
+        dialogContext,
+        title: 'System tones unavailable',
+        message:
+            'This Android device does not expose system alarm tones to apps. '
+            'Use Record voice or Pick file instead.',
       );
       return null;
     }
@@ -574,8 +598,10 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       started = await recorder.startRecording();
     } catch (error) {
       if (dialogContext.mounted) {
-        ScaffoldMessenger.of(dialogContext).showSnackBar(
-          SnackBar(content: Text('Could not start recording: $error')),
+        await _showAudioDialogMessage(
+          dialogContext,
+          title: 'Could not start recording',
+          message: '$error\n\nAllow microphone access in Android settings and try again.',
         );
       }
       await recorder.dispose();
