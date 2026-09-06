@@ -20,18 +20,20 @@ class AlarmScheduler {
       }
     }
 
+    final nativeAudioPath = resolvedAudioPath ?? 'assets/not_blank.mp3';
     final settings = AlarmSettings(
       id: id,
       dateTime: dateTime,
 
-      // The alarm plugin accepts bundled assets only. Flutter plays the
-      // selected device file after ringStream fires.
-      assetAudioPath: "",
+      // alarm 3.1.7's Android service supports both bundled assets and
+      // absolute device paths. Native playback keeps working if Flutter is
+      // backgrounded or the app process is not running.
+      assetAudioPath: nativeAudioPath,
 
       // Play the selected recording/file once, then let the alarm finish.
       loopAudio: false,
-      // Avoid a repeating native vibration while Flutter plays device audio.
-      vibrate: false,
+      // With loopAudio=false the plugin stops vibration when playback ends.
+      vibrate: true,
       volume: 0.8,
 
       // Required in alarm v3.x
@@ -42,7 +44,7 @@ class AlarmScheduler {
       androidFullScreenIntent: true,
     );
 
-    AlarmHandler.registerAudioPath(id, resolvedAudioPath);
+    AlarmHandler.registerAudioPath(id, nativeAudioPath);
     await Alarm.set(alarmSettings: settings);
   }
 
