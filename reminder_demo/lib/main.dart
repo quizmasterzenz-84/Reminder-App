@@ -250,10 +250,10 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text(editing == null ? 'Add reminder' : 'Edit reminder'),
+          scrollable: true,
           content: SizedBox(
             width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
+            child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -447,7 +447,6 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                   },
                 ),
               ],
-              ),
             ),
           ),
           actions: [
