@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:alarm/alarm.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
@@ -230,6 +231,9 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
   }
 
   Future<void> _addReminder({_Reminder? editing}) async {
+    debugPrint(
+      'ReminderFlow: opening ${editing == null ? 'add' : 'edit'} dialog',
+    );
     final titleController = TextEditingController(text: editing?.title);
     final snoozeController = TextEditingController(text: editing?.snoozeLabel);
     String? categoryId = editing?.categoryId ??
@@ -329,6 +333,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                             icon: const Icon(Icons.alarm),
                             label: const Text('System tone'),
                             onPressed: () async {
+                              debugPrint('ReminderFlow: system tone tapped');
                               final picked = await _pickSystemTone(context);
                               if (picked != null) {
                                 setDialogState(() {
@@ -343,6 +348,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                             icon: const Icon(Icons.mic),
                             label: const Text('Record voice'),
                             onPressed: () async {
+                              debugPrint('ReminderFlow: record voice tapped');
                               final recorded = await _recordVoiceMessage(context);
                               if (recorded != null) {
                                 setDialogState(() {
@@ -357,6 +363,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                             icon: const Icon(Icons.folder_open),
                             label: const Text('Pick file'),
                             onPressed: () async {
+                              debugPrint('ReminderFlow: pick file tapped');
                               final picked = await AudioPicker.pickAudioFile();
                               if (picked != null) {
                                 setDialogState(() {
@@ -390,6 +397,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                           icon: const Icon(Icons.alarm),
                           label: const Text('System tone'),
                           onPressed: () async {
+                            debugPrint('ReminderFlow: system tone tapped');
                             final picked = await _pickSystemTone(context);
                             if (picked != null) {
                               setDialogState(() {
@@ -403,6 +411,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                           icon: const Icon(Icons.mic),
                           label: const Text('Record voice'),
                           onPressed: () async {
+                            debugPrint('ReminderFlow: record voice tapped');
                             final recorded = await _recordVoiceMessage(context);
                             if (recorded != null) {
                               setDialogState(() {
@@ -416,6 +425,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                           icon: const Icon(Icons.folder_open),
                           label: const Text('Pick file'),
                           onPressed: () async {
+                            debugPrint('ReminderFlow: pick file tapped');
                             final picked = await AudioPicker.pickAudioFile();
                             if (picked != null) {
                               setDialogState(() {
@@ -457,8 +467,10 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
             TextButton(
                 onPressed: () {
                 if (titleController.text.trim().isEmpty || categoryId == null) {
+                  debugPrint('ReminderFlow: save rejected by validation');
                   return;
                 }
+                debugPrint('ReminderFlow: save tapped, closing dialog');
                 Navigator.of(context).pop(true);
               },
               child: const Text('Save'),
@@ -468,7 +480,11 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       ),
     );
 
-    if (saved != true || categoryId == null) return;
+    debugPrint('ReminderFlow: dialog returned saved=$saved');
+    if (saved != true || categoryId == null) {
+      debugPrint('ReminderFlow: reminder was not saved');
+      return;
+    }
 
     final category = _categories.firstWhere((c) => c.id == categoryId);
     final nextTriggerTime = DateTime(
@@ -506,12 +522,19 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
 
     // Best-effort: native alarm scheduling only works on a real Android build.
     try {
+      debugPrint(
+        'ReminderFlow: scheduling id=${updatedReminder.id} '
+        'at=${updatedReminder.nextTriggerTime.toIso8601String()} '
+        'audio=${updatedReminder.audioPath ?? 'default'}',
+      );
       await AlarmScheduler.scheduleReminder(
         id: updatedReminder.id,
         dateTime: updatedReminder.nextTriggerTime,
         audioPath: updatedReminder.audioPath,
       );
+      debugPrint('ReminderFlow: scheduling succeeded id=${updatedReminder.id}');
     } catch (error) {
+      debugPrint('ReminderFlow: scheduling failed: $error');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not schedule alarm: $error')),

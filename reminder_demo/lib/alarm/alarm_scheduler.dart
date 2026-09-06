@@ -14,8 +14,8 @@ class AlarmScheduler {
       // Audio file (user‑recorded or default)
       assetAudioPath: audioPath ?? "",
 
-      // Alarm behaviour: loop, vibrate, volume control
-      loopAudio: true,
+      // Play the selected recording/file once, then let the alarm finish.
+      loopAudio: false,
       vibrate: true,
       volume: 0.8,
 
