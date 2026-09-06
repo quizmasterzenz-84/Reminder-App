@@ -10,9 +10,22 @@ workflows:
         script: |
           cd reminder_demo
           flutter pub get
+      - name: Analyze Dart code
+        script: |
+          cd reminder_demo
+          flutter analyze
+      - name: Run tests
+        script: |
+          cd reminder_demo
+          flutter test
       - name: Build debug APK
         script: |
           cd reminder_demo
           flutter build apk --debug --android-skip-build-dependency-validation
+      - name: Build release APK
+        script: |
+          cd reminder_demo
+          export GRADLE_OPTS="-Xmx2G -XX:MaxMetaspaceSize=512M"
+          flutter build apk --release --android-skip-build-dependency-validation
     artifacts:
-      - reminder_demo/build/app/outputs/flutter-apk/app-debug.apk
+      - reminder_demo/build/app/outputs/flutter-apk/*.apk

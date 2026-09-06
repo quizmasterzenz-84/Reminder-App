@@ -1,9 +1,8 @@
-/// Pure date/time helpers with no reminder-specific knowledge and no
-/// external packages (deliberately not using `intl`, so this works fully
-/// offline with zero `pub get` network dependency).
-///
-/// Reusable beyond this app: copy into any Dart or Flutter project.
-library reusable_reminder_kit.core.date_time_helpers;
+// Pure date/time helpers with no reminder-specific knowledge and no
+// external packages (deliberately not using `intl`, so this works fully
+// offline with zero `pub get` network dependency).
+//
+// Reusable beyond this app: copy into any Dart or Flutter project.
 
 /// True if [a] and [b] fall on the same calendar day (ignores time-of-day).
 bool isSameDay(DateTime a, DateTime b) {

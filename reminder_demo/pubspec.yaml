@@ -33,15 +33,12 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-
   reusable_reminder_kit:
     path: ./reusable_reminder_kit
 
   # New dependencies for audio & alarm
   alarm:
     path: packages/alarm
-  just_audio: ^0.9.36
 
   # record 5.x's platform packages (record_linux/record_platform_interface) on
   # pub.dev no longer implement each other correctly - use the current 7.x line

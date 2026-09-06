@@ -5,11 +5,19 @@ workflows:
     environment:
       flutter: stable
       # M2 machine has limited resources; optimize JVM
-      java: openjdk|11
+      java: 17
     scripts:
       - name: Get dependencies
         script: |
           flutter pub get
+
+      - name: Analyze Dart code
+        script: |
+          flutter analyze
+
+      - name: Run tests
+        script: |
+          flutter test
 
       - name: Build debug APK
         script: |

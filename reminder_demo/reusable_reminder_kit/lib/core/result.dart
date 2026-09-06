@@ -1,10 +1,9 @@
-/// A small Result type so domain use-cases (createReminder, editReminder,
-/// deleteReminder, ...) can return either a value or a failure reason
-/// without throwing exceptions across module boundaries.
-///
-/// Reusable beyond this app: this file has zero knowledge of reminders.
-/// Copy it into any Flutter/Dart project as-is.
-library reusable_reminder_kit.core.result;
+// A small Result type so domain use-cases (createReminder, editReminder,
+// deleteReminder, ...) can return either a value or a failure reason
+// without throwing exceptions across module boundaries.
+//
+// Reusable beyond this app: this file has zero knowledge of reminders.
+// Copy it into any Flutter/Dart project as-is.
 
 /// Base type. Use [Result.ok] / [Result.fail] to construct.
 abstract class Result<T> {

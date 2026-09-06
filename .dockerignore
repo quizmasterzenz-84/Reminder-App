@@ -1,0 +1,10 @@
+.git
+.dart_tool
+**/.dart_tool
+build
+**/build
+.idea
+.vscode
+*.iml
+*.apk
+*.aab

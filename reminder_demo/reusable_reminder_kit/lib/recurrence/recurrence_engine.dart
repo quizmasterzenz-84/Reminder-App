@@ -1,10 +1,9 @@
-/// Pure recurrence-calculation logic. Given "when did it last trigger" and
-/// "what's the rule", returns "when should it trigger next" — nothing here
-/// knows what a reminder is, so it's the most reusable piece in the app.
-///
-/// Reusable beyond this app: any scheduling feature (habit tracker, medication
-/// log, subscription renewal tracker) can import this file unchanged.
-library reusable_reminder_kit.recurrence.recurrence_engine;
+// Pure recurrence-calculation logic. Given "when did it last trigger" and
+// "what's the rule", returns "when should it trigger next" — nothing here
+// knows what a reminder is, so it's the most reusable piece in the app.
+//
+// Reusable beyond this app: any scheduling feature (habit tracker, medication
+// log, subscription renewal tracker) can import this file unchanged.
 
 import '../core/date_time_helpers.dart';
 

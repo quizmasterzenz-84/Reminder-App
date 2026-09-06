@@ -1,6 +1,5 @@
-/// Single import point for the whole kit:
-///   import 'package:reusable_reminder_kit/reusable_reminder_kit.dart';
-library reusable_reminder_kit;
+// Single import point for the whole kit:
+//   import 'package:reusable_reminder_kit/reusable_reminder_kit.dart';
 
 export 'core/result.dart';
 export 'core/date_time_helpers.dart';

@@ -33,9 +33,27 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            val keystorePath = System.getenv("CM_KEYSTORE_PATH")
+            val keystorePassword = System.getenv("CM_KEYSTORE_PASSWORD")
+            val keyAlias = System.getenv("CM_KEY_ALIAS")
+            val keyPassword = System.getenv("CM_KEY_PASSWORD")
+            signingConfig = if (
+                !keystorePath.isNullOrBlank() &&
+                !keystorePassword.isNullOrBlank() &&
+                !keyAlias.isNullOrBlank() &&
+                !keyPassword.isNullOrBlank()
+            ) {
+                signingConfigs.create("codemagicRelease") {
+                    storeFile = file(keystorePath)
+                    storePassword = keystorePassword
+                    this.keyAlias = keyAlias
+                    this.keyPassword = keyPassword
+                }
+            } else {
+                // Local release smoke builds remain possible; configure all
+                // CM_* values in Codemagic for distributable artifacts.
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

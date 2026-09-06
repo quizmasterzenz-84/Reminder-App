@@ -6,6 +6,7 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
 
 import 'package:reminder_demo/main.dart';
 
@@ -19,16 +20,28 @@ void main() {
     expect(find.text('Next 14 days'), findsOneWidget);
   });
 
-  testWidgets('shows audio controls in the reminder dialog', (
+  testWidgets('opens reminder setup one step at a time', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const ReminderDemoApp());
     await tester.tap(find.text('Add reminder'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.widgetWithText(FilledButton, 'Continue'),
+    ));
+    await tester.pump();
 
-    expect(find.text('System tone'), findsOneWidget);
-    expect(find.text('Record voice'), findsOneWidget);
-    expect(find.text('Pick file'), findsOneWidget);
+    expect(find.text('Name your reminder'), findsOneWidget);
+    expect(find.text('Step 1 of 6'), findsOneWidget);
+
+    expect(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(FilledButton, 'Continue'),
+      ),
+      findsOneWidget,
+    );
   });
 }

@@ -1,0 +1,34 @@
+FROM ubuntu:24.04
+
+ARG ANDROID_API=34
+ARG SYSTEM_IMAGE_TYPE=google_apis
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    ANDROID_SDK_ROOT=/opt/android-sdk \
+    ANDROID_HOME=/opt/android-sdk \
+    PATH=/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:/opt/android-sdk/emulator:$PATH
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl unzip openjdk-17-jre-headless \
+    libpulse0 libgl1 libnss3 libxcomposite1 libxcursor1 libxi6 libxtst6 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools \
+    && curl -fsSL "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -o /tmp/cmdline-tools.zip \
+    && unzip -q /tmp/cmdline-tools.zip -d ${ANDROID_SDK_ROOT}/cmdline-tools \
+    && mv ${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools ${ANDROID_SDK_ROOT}/cmdline-tools/latest \
+    && rm /tmp/cmdline-tools.zip \
+    && yes | sdkmanager --licenses >/dev/null \
+    && sdkmanager "platform-tools" "emulator" \
+       "platforms;android-${ANDROID_API}" \
+       "system-images;android-${ANDROID_API};${SYSTEM_IMAGE_TYPE};x86_64"
+
+RUN echo "no" | avdmanager create avd \
+    --name test \
+    --package "system-images;android-${ANDROID_API};${SYSTEM_IMAGE_TYPE};x86_64" \
+    --device "pixel_5"
+
+COPY docker/emulator-entrypoint.sh /usr/local/bin/reminder-emulator
+RUN chmod +x /usr/local/bin/reminder-emulator
+
+ENTRYPOINT ["reminder-emulator"]
