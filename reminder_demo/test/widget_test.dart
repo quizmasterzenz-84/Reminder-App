@@ -24,7 +24,8 @@ void main() {
   ) async {
     await tester.pumpWidget(const ReminderDemoApp());
     await tester.tap(find.text('Add reminder'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('System tone'), findsOneWidget);
     expect(find.text('Record voice'), findsOneWidget);

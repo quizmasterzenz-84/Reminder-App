@@ -487,6 +487,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                               debugPrint('ReminderFlow: system tone tapped');
                               final picked = await _pickSystemTone(context);
                               if (picked != null) {
+                                if (!context.mounted) return;
                                 setDialogState(() {
                                   audioPath = picked.path;
                                   audioId = picked.id;
@@ -501,6 +502,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                             onPressed: () async {
                               final saved = await _pickSavedAudio(context);
                               if (saved != null) {
+                                if (!context.mounted) return;
                                 setDialogState(() {
                                   audioPath = saved.path;
                                   audioId = saved.tag;
@@ -516,15 +518,15 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                               debugPrint('ReminderFlow: record voice tapped');
                               final recorded = await _recordVoiceMessage(context);
                               if (recorded != null) {
-                                await _addAudioEntry(
-                                  path: recorded.path,
-                                  tag: recorded.tag,
-                                );
                                 if (!context.mounted) return;
                                 setDialogState(() {
                                   audioPath = recorded.path;
                                   audioId = recorded.tag;
                                 });
+                                unawaited(_addAudioEntry(
+                                  path: recorded.path,
+                                  tag: recorded.tag,
+                                ));
                               }
                             },
                           ),
@@ -536,6 +538,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                               debugPrint('ReminderFlow: pick file tapped');
                               final picked = await AudioPicker.pickAudioFile();
                               if (picked != null) {
+                                if (!context.mounted) return;
                                 setDialogState(() {
                                   audioPath = picked.path;
                                   audioId = picked.id;
@@ -570,6 +573,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                             debugPrint('ReminderFlow: system tone tapped');
                             final picked = await _pickSystemTone(context);
                             if (picked != null) {
+                              if (!context.mounted) return;
                               setDialogState(() {
                                 audioPath = picked.path;
                                 audioId = picked.id;
@@ -583,6 +587,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                           onPressed: () async {
                             final saved = await _pickSavedAudio(context);
                             if (saved != null) {
+                              if (!context.mounted) return;
                               setDialogState(() {
                                 audioPath = saved.path;
                                 audioId = saved.tag;
@@ -597,15 +602,15 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                             debugPrint('ReminderFlow: record voice tapped');
                             final recorded = await _recordVoiceMessage(context);
                             if (recorded != null) {
-                              await _addAudioEntry(
-                                path: recorded.path,
-                                tag: recorded.tag,
-                              );
                               if (!context.mounted) return;
                               setDialogState(() {
                                 audioPath = recorded.path;
                                 audioId = recorded.tag;
                               });
+                              unawaited(_addAudioEntry(
+                                path: recorded.path,
+                                tag: recorded.tag,
+                              ));
                             }
                           },
                         ),
@@ -616,6 +621,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
                             debugPrint('ReminderFlow: pick file tapped');
                             final picked = await AudioPicker.pickAudioFile();
                             if (picked != null) {
+                              if (!context.mounted) return;
                               setDialogState(() {
                                 audioPath = picked.path;
                                 audioId = picked.id;

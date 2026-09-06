@@ -18,6 +18,9 @@ class AlarmScheduler {
           true;
     } on MissingPluginException {
       return true;
+    } on PlatformException {
+      // Non-Android test environments do not register the native channel.
+      return true;
     }
   }
 
