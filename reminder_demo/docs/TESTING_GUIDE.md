@@ -4,21 +4,22 @@ This guide explains how to install the required tools, test the reusable package
 
 ## 1. Understand the project
 
-`Reminder-App` is a reusable Flutter package/library. It is not a complete standalone mobile application.
+`Reminder-App` contains the complete `reminder_demo` Flutter application and a
+local reusable widget package.
 
 This means:
 
 - `flutter test` runs directly in this repository.
-- `flutter run` must be run from a separate demo application.
-- The demo application imports this repository as a local package.
+- `flutter run` for the mobile app must be run from `reminder_demo/`.
+- The demo application imports `reusable_reminder_kit` and the local `alarm`
+  package fork.
 - Android testing is optional for testing the core package logic.
 
 The package contains date helpers, recurrence logic, and reusable Flutter widgets.
 
-The browser demo also contains a complete in-memory reminder UI smoke test. It
-does not yet provide voice recording, audio playback, persistent storage, or
-Android notification delivery. Those requirements need a full host app and
-local Android testing, as described below.
+The browser build is useful for testing the multi-step reminder UI and form
+validation. Native microphone, alarm, system-tone, reboot-recovery, and OEM
+battery behavior still require Android testing.
 
 ## 2. Required dependencies
 
@@ -30,7 +31,8 @@ Install only these tools:
 2. Git, if cloning the repository from GitHub.
 3. A terminal such as PowerShell on Windows or Bash on Linux.
 
-This package has no third-party runtime dependencies. Its `pubspec.yaml` uses only:
+The demo app uses Flutter plugins for alarms, recording, audio files, and
+package information. The reusable package itself remains lightweight.
 
 ```yaml
 dependencies:
@@ -84,6 +86,34 @@ Install:
 4. An Android phone with USB debugging enabled, or an Android emulator.
 
 The emulator also needs hardware virtualization. A real Android phone is often easier than an emulator.
+
+### Containerized build and emulator
+
+From the repository root, the test container runs dependency resolution,
+analysis, widget tests, and debug/release APK builds:
+
+```bash
+docker compose -f docker-compose.test.yml run --rm reminder-test
+BUILD_APK=1 docker compose -f docker-compose.test.yml run --rm reminder-test
+```
+
+The headless emulator is a separate service and requires Docker privileged mode
+plus `/dev/kvm` on the host:
+
+```bash
+./build-apk.sh
+./run-emulator.sh
+```
+
+Codespaces without KVM cannot run this emulator container. Use Codemagic for
+APK builds and a physical Android phone, or a local machine with virtualization
+enabled, for end-to-end alarm testing.
+
+### iOS and Xcode validation
+
+iOS builds, Xcode compilation, static analysis, and iOS simulator tests require
+macOS with Xcode. They are not validated by the Linux container or Codemagic's
+Android workflow.
 
 ## 3. Download the repository
 

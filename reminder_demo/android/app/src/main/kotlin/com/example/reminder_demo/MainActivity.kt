@@ -6,6 +6,7 @@ import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.content.pm.PackageManager
 import android.provider.Settings
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.android.FlutterActivity
@@ -14,6 +15,7 @@ import java.io.File
 
 private const val SYSTEM_ALARM_CHANNEL = "reminder_demo/system_alarms"
 private const val EXACT_ALARM_CHANNEL = "reminder_demo/exact_alarms"
+private const val NOTIFICATION_CHANNEL = "reminder_demo/notifications"
 
 class MainActivity : FlutterActivity() {
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -49,6 +51,32 @@ class MainActivity : FlutterActivity() {
 				} else {
 					startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
 					result.success(false)
+				}
+			}
+
+		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NOTIFICATION_CHANNEL)
+			.setMethodCallHandler { call, result ->
+				if (call.method != "ensurePermission") {
+					result.notImplemented()
+					return@setMethodCallHandler
+				}
+				if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+					result.success(true)
+					return@setMethodCallHandler
+				}
+				if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+					PackageManager.PERMISSION_GRANTED
+				) {
+					result.success(true)
+				} else {
+					requestPermissions(
+						arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+						NOTIFICATION_PERMISSION_REQUEST,
+					)
+					// The permission result arrives asynchronously. Let the flow
+					// continue while the system prompt is visible; a later attempt
+					// will report a persistent denial accurately.
+					result.success(true)
 				}
 			}
 	}
@@ -103,3 +131,5 @@ class MainActivity : FlutterActivity() {
 		}
 	}
 }
+
+private const val NOTIFICATION_PERMISSION_REQUEST = 2001

@@ -1,0 +1,24 @@
+services:
+  reminder-test:
+    image: reminder-app-test:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      BUILD_APK: "${BUILD_APK:-0}"
+    volumes:
+      - ./container-artifacts:/workspace/reminder_demo/build/app/outputs/flutter-apk
+
+  emulator:
+    image: reminder-app-emulator:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.emulator
+    privileged: true
+    devices:
+      - /dev/kvm
+    volumes:
+      - ./container-artifacts:/artifacts:ro
+    ports:
+      - "5555:5555"
+

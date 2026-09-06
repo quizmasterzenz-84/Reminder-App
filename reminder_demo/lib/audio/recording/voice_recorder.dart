@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:record/record.dart';
@@ -74,29 +73,6 @@ class VoiceRecorder {
     } catch (e) {
       debugPrint('Stop failed: $e');
       return null;
-    }
-  }
-
-  Future<Stream<Uint8List>?> startStream() async {
-    try {
-      return await _recorder.startStream(
-        RecordConfig(
-          encoder: AudioEncoder.wav,
-          bitRate: 128000,
-          sampleRate: 44100,
-        ),
-      );
-    } catch (e) {
-      debugPrint('Stream start failed: $e');
-      return null;
-    }
-  }
-
-  Future<void> stopStream() async {
-    try {
-      await _recorder.stop();
-    } catch (e) {
-      debugPrint('Stream stop failed: $e');
     }
   }
 

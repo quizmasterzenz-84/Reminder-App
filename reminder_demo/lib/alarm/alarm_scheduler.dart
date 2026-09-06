@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:alarm/alarm.dart';
 import 'package:flutter/services.dart';
 
-import 'alarm_handler.dart';
 import '../audio/system/system_alarm_loader.dart';
 
 /// Schedules a native alarm (survives app kill, shows full-screen intent) for a reminder.
@@ -11,6 +10,21 @@ class AlarmScheduler {
   static const MethodChannel _exactAlarmChannel = MethodChannel(
     'reminder_demo/exact_alarms',
   );
+  static const MethodChannel _notificationChannel = MethodChannel(
+    'reminder_demo/notifications',
+  );
+
+  static Future<bool> ensureNotificationPermission() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      return await _notificationChannel.invokeMethod<bool>('ensurePermission') ??
+          false;
+    } on MissingPluginException {
+      return true;
+    } on PlatformException {
+      return false;
+    }
+  }
 
   static Future<bool> ensureExactAlarmPermission() async {
     if (!Platform.isAndroid) return true;
@@ -20,8 +34,7 @@ class AlarmScheduler {
     } on MissingPluginException {
       return true;
     } on PlatformException {
-      // Non-Android test environments do not register the native channel.
-      return true;
+      return false;
     }
   }
 
@@ -72,13 +85,10 @@ class AlarmScheduler {
       androidFullScreenIntent: true,
     );
 
-    AlarmHandler.registerAudioPath(id, nativeAudioPath);
     await Alarm.set(alarmSettings: settings);
   }
 
   static Future<void> cancelReminder(int id) async {
-    AlarmHandler.registerAudioPath(id, null);
-    await AlarmHandler.stopActiveAudio();
     await Alarm.stop(id);
   }
 }
