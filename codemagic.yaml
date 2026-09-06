@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 120
     environment:
       flutter: stable
-      java: openjdk|17
+      java: openjdk|11
     scripts:
       - name: Get dependencies
         script: |
