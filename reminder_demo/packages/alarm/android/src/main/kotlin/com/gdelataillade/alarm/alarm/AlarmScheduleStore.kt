@@ -22,6 +22,9 @@ internal object AlarmScheduleStore {
             put("notificationTitle", intent.getStringExtra("notificationTitle"))
             put("notificationBody", intent.getStringExtra("notificationBody"))
             put("fullScreenIntent", intent.getBooleanExtra("fullScreenIntent", true))
+            put("ringDurationSeconds", intent.getIntExtra("ringDurationSeconds", 0))
+            put("snoozeDelaySeconds", intent.getIntExtra("snoozeDelaySeconds", 0))
+            put("remainingRings", intent.getIntExtra("remainingRings", 1))
         }
         val preferences = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
         val ids = preferences.getStringSet(idsKey, emptySet())!!.toMutableSet().apply {
@@ -67,6 +70,9 @@ internal object AlarmScheduleStore {
                     putExtra("notificationTitle", alarm.optString("notificationTitle"))
                     putExtra("notificationBody", alarm.optString("notificationBody"))
                     putExtra("fullScreenIntent", alarm.optBoolean("fullScreenIntent", true))
+                    putExtra("ringDurationSeconds", alarm.optInt("ringDurationSeconds", 0))
+                    putExtra("snoozeDelaySeconds", alarm.optInt("snoozeDelaySeconds", 0))
+                    putExtra("remainingRings", alarm.optInt("remainingRings", 1))
                 }
                 schedule(context, id, triggerTime, intent)
             } catch (_: Exception) {

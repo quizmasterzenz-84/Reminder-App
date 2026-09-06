@@ -139,6 +139,9 @@ class AlarmPlugin: FlutterPlugin, MethodCallHandler {
         intent.putExtra("notificationTitle", call.argument<String>("notificationTitle"))
         intent.putExtra("notificationBody", call.argument<String>("notificationBody"))
         intent.putExtra("fullScreenIntent", call.argument<Boolean>("fullScreenIntent"))
+        intent.putExtra("ringDurationSeconds", call.argument<Int>("ringDurationSeconds") ?: 0)
+        intent.putExtra("snoozeDelaySeconds", call.argument<Int>("snoozeDelaySeconds") ?: 0)
+        intent.putExtra("remainingRings", call.argument<Int>("remainingRings") ?: 1)
     }
 
     fun handleImmediateAlarm(context: Context, intent: Intent, delayInSeconds: Int) {

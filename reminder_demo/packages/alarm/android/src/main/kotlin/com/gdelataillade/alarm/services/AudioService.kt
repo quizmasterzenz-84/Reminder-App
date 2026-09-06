@@ -12,9 +12,14 @@ class AudioService(private val context: Context) {
     private val timers = ConcurrentHashMap<Int, Timer>()
 
     private var onAudioComplete: (() -> Unit)? = null
+    private var onAudioStarted: (() -> Unit)? = null
 
     fun setOnAudioCompleteListener(listener: () -> Unit) {
         onAudioComplete = listener
+    }
+
+    fun setOnAudioStartedListener(listener: () -> Unit) {
+        onAudioStarted = listener
     }
 
     fun isMediaPlayerEmpty(): Boolean {
@@ -61,6 +66,7 @@ class AudioService(private val context: Context) {
                 setOnPreparedListener {
                     isLooping = loopAudio
                     start()
+                    onAudioStarted?.invoke()
                     if (fadeDuration != null && fadeDuration > 0) {
                         val timer = Timer(true)
                         timers[id] = timer

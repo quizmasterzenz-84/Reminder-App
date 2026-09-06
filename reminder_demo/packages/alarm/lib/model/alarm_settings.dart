@@ -17,6 +17,9 @@ class AlarmSettings {
     this.fadeDuration = 0.0,
     this.enableNotificationOnKill = true,
     this.androidFullScreenIntent = true,
+    this.ringDurationSeconds = 0,
+    this.snoozeDelaySeconds = 0,
+    this.remainingRings = 1,
   });
 
   /// Constructs an `AlarmSettings` instance from the given JSON data.
@@ -34,6 +37,9 @@ class AlarmSettings {
             json['enableNotificationOnKill'] as bool? ?? true,
         androidFullScreenIntent:
             json['androidFullScreenIntent'] as bool? ?? true,
+        ringDurationSeconds: json['ringDurationSeconds'] as int? ?? 0,
+        snoozeDelaySeconds: json['snoozeDelaySeconds'] as int? ?? 0,
+        remainingRings: json['remainingRings'] as int? ?? 1,
       );
 
   /// Unique identifier assiocated with the alarm. Cannot be 0 or -1;
@@ -115,6 +121,15 @@ class AlarmSettings {
   /// package.
   final bool androidFullScreenIntent;
 
+  /// Maximum duration of each ringing period. Zero lets the audio end normally.
+  final int ringDurationSeconds;
+
+  /// Silent delay before the next ringing period.
+  final int snoozeDelaySeconds;
+
+  /// Number of ringing periods remaining, including the current one.
+  final int remainingRings;
+
   /// Returns a hash code for this `AlarmSettings` instance using
   /// Jenkins hash function.
   @override
@@ -131,6 +146,9 @@ class AlarmSettings {
     hash = hash ^ (notificationTitle.hashCode);
     hash = hash ^ (notificationBody.hashCode);
     hash = hash ^ enableNotificationOnKill.hashCode;
+    hash = hash ^ ringDurationSeconds.hashCode;
+    hash = hash ^ snoozeDelaySeconds.hashCode;
+    hash = hash ^ remainingRings.hashCode;
     hash = hash & 0x3fffffff;
 
     return hash;
@@ -150,6 +168,9 @@ class AlarmSettings {
     String? notificationBody,
     bool? enableNotificationOnKill,
     bool? androidFullScreenIntent,
+    int? ringDurationSeconds,
+    int? snoozeDelaySeconds,
+    int? remainingRings,
   }) {
     return AlarmSettings(
       id: id ?? this.id,
@@ -165,6 +186,9 @@ class AlarmSettings {
           enableNotificationOnKill ?? this.enableNotificationOnKill,
       androidFullScreenIntent:
           androidFullScreenIntent ?? this.androidFullScreenIntent,
+        ringDurationSeconds: ringDurationSeconds ?? this.ringDurationSeconds,
+        snoozeDelaySeconds: snoozeDelaySeconds ?? this.snoozeDelaySeconds,
+        remainingRings: remainingRings ?? this.remainingRings,
     );
   }
 
@@ -181,6 +205,9 @@ class AlarmSettings {
         'notificationBody': notificationBody,
         'enableNotificationOnKill': enableNotificationOnKill,
         'androidFullScreenIntent': androidFullScreenIntent,
+        'ringDurationSeconds': ringDurationSeconds,
+        'snoozeDelaySeconds': snoozeDelaySeconds,
+        'remainingRings': remainingRings,
       };
 
   /// Returns all the properties of `AlarmSettings` for debug purposes.
@@ -209,5 +236,8 @@ class AlarmSettings {
           notificationTitle == other.notificationTitle &&
           notificationBody == other.notificationBody &&
           enableNotificationOnKill == other.enableNotificationOnKill &&
-          androidFullScreenIntent == other.androidFullScreenIntent;
+          androidFullScreenIntent == other.androidFullScreenIntent &&
+          ringDurationSeconds == other.ringDurationSeconds &&
+          snoozeDelaySeconds == other.snoozeDelaySeconds &&
+          remainingRings == other.remainingRings;
 }

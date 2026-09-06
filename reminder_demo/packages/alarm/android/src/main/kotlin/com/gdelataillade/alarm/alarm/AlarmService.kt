@@ -13,6 +13,8 @@ import android.content.pm.ServiceInfo
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import io.flutter.Log
 import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.embedding.engine.FlutterEngine
@@ -57,6 +59,9 @@ class AlarmService : Service() {
         val notificationTitle = intent.getStringExtra("notificationTitle") ?: "Default Title" // Default if null
         val notificationBody = intent.getStringExtra("notificationBody") ?: "Default Body" // Default if null
         val fullScreenIntent = intent.getBooleanExtra("fullScreenIntent", true)
+        val ringDurationSeconds = intent.getIntExtra("ringDurationSeconds", 0)
+        val snoozeDelaySeconds = intent.getIntExtra("snoozeDelaySeconds", 0)
+        val remainingRings = intent.getIntExtra("remainingRings", 1)
 
         // Handling notification
         val notificationHandler = NotificationHandler(this)
@@ -92,6 +97,24 @@ class AlarmService : Service() {
                 vibrationService?.stopVibrating()
                 volumeService?.restorePreviousVolume(showSystemUI)
                 volumeService?.abandonAudioFocus()
+            }
+        }
+
+        audioService?.setOnAudioStartedListener {
+            if (ringDurationSeconds > 0) {
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (remainingRings > 1) {
+                        val nextIntent = Intent(this, AlarmReceiver::class.java).apply {
+                            putExtras(intent)
+                            putExtra("remainingRings", remainingRings - 1)
+                        }
+                        val nextTriggerTime = System.currentTimeMillis() +
+                            snoozeDelaySeconds * 1000L
+                        AlarmScheduleStore.save(this, id, nextTriggerTime, nextIntent)
+                        AlarmScheduleStore.schedule(this, id, nextTriggerTime, nextIntent)
+                    }
+                    stopAlarm(id)
+                }, ringDurationSeconds * 1000L)
             }
         }
 

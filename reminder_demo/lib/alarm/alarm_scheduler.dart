@@ -54,8 +54,11 @@ class AlarmScheduler {
       // backgrounded or the app process is not running.
       assetAudioPath: nativeAudioPath,
 
-      // Play the selected recording/file once, then let the alarm finish.
-      loopAudio: false,
+      // Ring for 15 seconds, pause for 15 seconds, ring once more, then stop.
+      loopAudio: true,
+      ringDurationSeconds: 15,
+      snoozeDelaySeconds: 15,
+      remainingRings: 2,
       // Voice messages and selected tones play without a separate vibration.
       vibrate: false,
       volume: 0.8,
