@@ -31,34 +31,14 @@ class VoiceRecorder {
 
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-    // Try AAC first (supported in your version)
-    try {
-      final path = p.join(folder.path, 'voice_$timestamp.m4a');
-      await _recorder.start(
-        RecordConfig(
-          encoder: AudioEncoder.aacLc,
-          bitRate: 128000,
-          sampleRate: 44100,
-        ),
-        path: path,
-      );
-      debugPrint(
-        'VoiceRecorder: AAC recording started in '
-        '${stopwatch.elapsedMilliseconds}ms',
-      );
-      return path;
-    } catch (e) {
-      debugPrint('AAC record failed: $e');
-    }
-
-    // Fallback to WAV (your version supports WAV encoder)
+    // WAV starts reliably across Android devices and avoids an AAC encoder
+    // negotiation timeout before recording begins.
     try {
       final path = p.join(folder.path, 'voice_$timestamp.wav');
       await _recorder.start(
         RecordConfig(
           encoder: AudioEncoder.wav,
-          bitRate: 128000,
-          sampleRate: 44100,
+          sampleRate: 16000,
         ),
         path: path,
       );
