@@ -13,6 +13,7 @@ class AlarmScheduler {
   );
 
   static Future<bool> ensureExactAlarmPermission() async {
+    if (!Platform.isAndroid) return true;
     try {
       return await _exactAlarmChannel.invokeMethod<bool>('ensurePermission') ??
           true;

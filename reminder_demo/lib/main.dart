@@ -385,24 +385,77 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       );
       return;
     }
-    final titleController = TextEditingController(text: editing?.title);
-    final snoozeController = TextEditingController(text: editing?.snoozeLabel);
-    String? categoryId = editing?.categoryId ??
-        (_categories.isNotEmpty ? _categories.first.id : null);
-    final initialTime = editing?.nextTriggerTime ??
-        DateTime.now().add(const Duration(minutes: 1));
-    DateTime pickedDate = DateTime(
-      initialTime.year,
-      initialTime.month,
-      initialTime.day,
-    );
-    TimeOfDay pickedTime = TimeOfDay.fromDateTime(initialTime);
-    String? audioPath = editing?.audioPath;
-    String? audioId = editing?.audioId;
-
-    final saved = await showDialog<bool>(
+    final saved = await showDialog<_ReminderDraft>(
       context: context,
-      builder: (context) => StatefulBuilder(
+      builder: (context) => _ReminderEditorDialog(
+        editing: editing,
+        categories: _categories,
+        onAddCategory: _addCategory,
+        onPickSystemTone: _pickSystemTone,
+        onPickSavedAudio: _pickSavedAudio,
+        onRecordVoice: _recordVoiceMessage,
+        onPickFile: AudioPicker.pickAudioFile,
+        onSaveAudio: (path, tag) => _addAudioEntry(path: path, tag: tag),
+      ),
+    );
+
+    debugPrint('ReminderFlow: dialog returned saved=${saved != null}');
+    if (saved == null || saved.categoryId == null) {
+      debugPrint('ReminderFlow: reminder was not saved');
+      return;
+    }
+
+    final category = _categories.firstWhere((c) => c.id == saved.categoryId);
+    final updatedReminder = _Reminder(
+      id: editing?.id ?? _nextId++,
+      categoryId: category.id,
+      categoryName: category.name,
+      importance: category.importance,
+      title: saved.title,
+      nextTriggerTime: saved.nextTriggerTime,
+      finalTime: editing?.finalTime,
+      snoozeLabel: saved.snoozeLabel,
+      audioPath: saved.audioPath,
+      audioId: saved.audioId,
+    );
+
+    // Schedule first so an unscheduled reminder is never persisted to the UI.
+    try {
+      debugPrint('ReminderFlow: scheduling id=${updatedReminder.id}');
+      await AlarmScheduler.scheduleReminder(
+        id: updatedReminder.id,
+        dateTime: updatedReminder.nextTriggerTime,
+        audioPath: updatedReminder.audioPath,
+      );
+      debugPrint('ReminderFlow: scheduling succeeded id=${updatedReminder.id}');
+    } catch (error) {
+      debugPrint('ReminderFlow: scheduling failed: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not schedule alarm: $error')),
+      );
+      return;
+    }
+
+    setState(() {
+      if (editing == null) {
+        _reminders.add(updatedReminder);
+      } else {
+        final index = _reminders.indexWhere((reminder) => reminder.id == editing.id);
+        if (index != -1) _reminders[index] = updatedReminder;
+        _alreadyNotifiedIds.remove(editing.id);
+      }
+    });
+    await _saveReminders();
+  }
+
+  /*
+    The editor dialog is a dedicated StatefulWidget below. Keeping its async
+    form state out of the page prevents dialog teardown from retaining stale
+    inherited-widget dependents.
+  */
+  /* OLD_EDITOR_REMOVED
+        builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text(editing == null ? 'Add reminder' : 'Edit reminder'),
           scrollable: true,
@@ -735,6 +788,8 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     });
     await _saveReminders();
   }
+
+  */
 
   Future<void> _showAudioDialogMessage(
     BuildContext dialogContext, {
@@ -1198,6 +1253,270 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ReminderDraft {
+  final String title;
+  final String? categoryId;
+  final DateTime nextTriggerTime;
+  final String? snoozeLabel;
+  final String? audioPath;
+  final String? audioId;
+
+  const _ReminderDraft({
+    required this.title,
+    required this.categoryId,
+    required this.nextTriggerTime,
+    required this.snoozeLabel,
+    required this.audioPath,
+    required this.audioId,
+  });
+}
+
+class _ReminderEditorDialog extends StatefulWidget {
+  final _Reminder? editing;
+  final List<CategoryOption> categories;
+  final Future<void> Function() onAddCategory;
+  final Future<({String path, String id})?> Function(BuildContext)
+      onPickSystemTone;
+  final Future<({String path, String tag})?> Function(BuildContext)
+      onPickSavedAudio;
+  final Future<({String path, String tag})?> Function(BuildContext)
+      onRecordVoice;
+  final Future<PickedAudio?> Function() onPickFile;
+  final Future<void> Function(String path, String tag) onSaveAudio;
+
+  const _ReminderEditorDialog({
+    required this.editing,
+    required this.categories,
+    required this.onAddCategory,
+    required this.onPickSystemTone,
+    required this.onPickSavedAudio,
+    required this.onRecordVoice,
+    required this.onPickFile,
+    required this.onSaveAudio,
+  });
+
+  @override
+  State<_ReminderEditorDialog> createState() => _ReminderEditorDialogState();
+}
+
+class _ReminderEditorDialogState extends State<_ReminderEditorDialog> {
+  late final TextEditingController _titleController;
+  late final TextEditingController _snoozeController;
+  String? _categoryId;
+  late DateTime _pickedDate;
+  late TimeOfDay _pickedTime;
+  String? _audioPath;
+  String? _audioId;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final editing = widget.editing;
+    final initial = editing?.nextTriggerTime ??
+        DateTime.now().add(const Duration(minutes: 1));
+    _titleController = TextEditingController(text: editing?.title);
+    _snoozeController = TextEditingController(text: editing?.snoozeLabel);
+    _categoryId = editing?.categoryId ??
+        (widget.categories.isEmpty ? null : widget.categories.first.id);
+    _pickedDate = DateTime(initial.year, initial.month, initial.day);
+    _pickedTime = TimeOfDay.fromDateTime(initial);
+    _audioPath = editing?.audioPath;
+    _audioId = editing?.audioId;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _snoozeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _record() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final recorded = await widget.onRecordVoice(context);
+    if (!mounted) return;
+    if (recorded != null) {
+      setState(() {
+        _audioPath = recorded.path;
+        _audioId = recorded.tag;
+      });
+      unawaited(widget.onSaveAudio(recorded.path, recorded.tag));
+    }
+    if (mounted) setState(() => _busy = false);
+  }
+
+  Future<void> _selectSystemTone() async {
+    final selected = await widget.onPickSystemTone(context);
+    if (!mounted || selected == null) return;
+    setState(() {
+      _audioPath = selected.path;
+      _audioId = selected.id;
+    });
+  }
+
+  Future<void> _selectSavedAudio() async {
+    final selected = await widget.onPickSavedAudio(context);
+    if (!mounted || selected == null) return;
+    setState(() {
+      _audioPath = selected.path;
+      _audioId = selected.tag;
+    });
+  }
+
+  Future<void> _selectFile() async {
+    final selected = await widget.onPickFile();
+    if (!mounted || selected == null) return;
+    setState(() {
+      _audioPath = selected.path;
+      _audioId = selected.id;
+    });
+  }
+
+  void _save() {
+    final title = _titleController.text.trim();
+    if (title.isEmpty || _categoryId == null || _busy) return;
+    Navigator.of(context).pop(_ReminderDraft(
+      title: title,
+      categoryId: _categoryId,
+      nextTriggerTime: DateTime(
+        _pickedDate.year,
+        _pickedDate.month,
+        _pickedDate.day,
+        _pickedTime.hour,
+        _pickedTime.minute,
+      ),
+      snoozeLabel: _snoozeController.text.trim().isEmpty
+          ? null
+          : _snoozeController.text.trim(),
+      audioPath: _audioPath,
+      audioId: _audioId,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final audioButtons = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        OutlinedButton.icon(
+          icon: const Icon(Icons.alarm),
+          label: const Text('System tone'),
+          onPressed: _busy ? null : _selectSystemTone,
+        ),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.library_music),
+          label: const Text('Saved audio'),
+          onPressed: _busy ? null : _selectSavedAudio,
+        ),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.mic),
+          label: const Text('Record voice'),
+          onPressed: _busy ? null : _record,
+        ),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.folder_open),
+          label: const Text('Pick file'),
+          onPressed: _busy ? null : _selectFile,
+        ),
+        if (_audioPath != null)
+          OutlinedButton.icon(
+            icon: const Icon(Icons.clear),
+            label: const Text('Clear'),
+            onPressed: _busy
+                ? null
+                : () => setState(() {
+                      _audioPath = null;
+                      _audioId = null;
+                    }),
+          ),
+      ],
+    );
+
+    return AlertDialog(
+      title: Text(widget.editing == null ? 'Add reminder' : 'Edit reminder'),
+      scrollable: true,
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            const SizedBox(height: 12),
+            CategorySelector(
+              categories: widget.categories,
+              selectedId: _categoryId,
+              onSelected: (value) => setState(() => _categoryId = value),
+              onAddNewCategory: widget.onAddCategory,
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('Date: ${formatShortDate(_pickedDate)}'),
+              trailing: const Icon(Icons.edit_calendar_outlined),
+              onTap: () async {
+                final selected = await showDatePicker(
+                  context: context,
+                  initialDate: _pickedDate,
+                  firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                  lastDate: DateTime.now().add(const Duration(days: 3650)),
+                );
+                if (mounted && selected != null) {
+                  setState(() => _pickedDate = selected);
+                }
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('Time: ${_pickedTime.format(context)}'),
+              trailing: const Icon(Icons.access_time),
+              onTap: () async {
+                final selected = await showTimePicker(
+                  context: context,
+                  initialTime: _pickedTime,
+                );
+                if (mounted && selected != null) {
+                  setState(() => _pickedTime = selected);
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            Text('Alarm sound', style: Theme.of(context).textTheme.labelLarge),
+            Text(_audioId ?? 'Default tone',
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 4),
+            audioButtons,
+            const SizedBox(height: 12),
+            TextField(
+              controller: _snoozeController,
+              decoration: const InputDecoration(
+                labelText: 'Snooze label (optional)',
+                hintText: 'e.g. 5 min',
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: _save,
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }
