@@ -393,7 +393,6 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
         onAddCategory: _addCategory,
         onPickSystemTone: _pickSystemTone,
         onPickSavedAudio: _pickSavedAudio,
-        onRecordVoice: _recordVoiceMessage,
         onPickFile: AudioPicker.pickAudioFile,
         onSaveAudio: (path, tag) => _addAudioEntry(path: path, tag: tag),
       ),
@@ -857,72 +856,6 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
     );
   }
 
-  Future<({String path, String tag})?> _recordVoiceMessage(
-    BuildContext dialogContext,
-  ) async {
-    final recorder = VoiceRecorder();
-    String? started;
-    try {
-      started = await recorder.startRecording();
-    } catch (error) {
-      if (dialogContext.mounted) {
-        await _showAudioDialogMessage(
-          dialogContext,
-          title: 'Could not start recording',
-          message: '$error\n\nAllow microphone access in Android settings and try again.',
-        );
-      }
-      await recorder.dispose();
-      return null;
-    }
-    if (!dialogContext.mounted || started == null) return null;
-
-    final tagController = TextEditingController();
-    final result = await showDialog<({bool stop, String tag})>(
-      context: dialogContext,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Recording\u2026'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Tap stop when you\'re done.'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: tagController,
-              decoration: const InputDecoration(
-                labelText: 'Voice message name',
-                hintText: 'e.g. Dentist appointment',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              final tag = tagController.text.trim();
-              if (tag.isNotEmpty) {
-                Navigator.of(context).pop((stop: true, tag: tag));
-              }
-            },
-            child: const Text('Stop'),
-          ),
-        ],
-      ),
-    );
-
-    tagController.dispose();
-    if (result == null || !result.stop) {
-      await recorder.stopRecording();
-      await recorder.dispose();
-      return null;
-    }
-    final path = await recorder.stopRecording();
-    await recorder.dispose();
-    if (path == null) return null;
-    return (path: path, tag: result.tag);
-  }
-
   Future<({String path, String tag})?> _pickSavedAudio(
     BuildContext dialogContext,
   ) async {
@@ -1283,8 +1216,6 @@ class _ReminderEditorDialog extends StatefulWidget {
       onPickSystemTone;
   final Future<({String path, String tag})?> Function(BuildContext)
       onPickSavedAudio;
-  final Future<({String path, String tag})?> Function(BuildContext)
-      onRecordVoice;
   final Future<PickedAudio?> Function() onPickFile;
   final Future<void> Function(String path, String tag) onSaveAudio;
 
@@ -1294,7 +1225,6 @@ class _ReminderEditorDialog extends StatefulWidget {
     required this.onAddCategory,
     required this.onPickSystemTone,
     required this.onPickSavedAudio,
-    required this.onRecordVoice,
     required this.onPickFile,
     required this.onSaveAudio,
   });
@@ -1312,6 +1242,9 @@ class _ReminderEditorDialogState extends State<_ReminderEditorDialog> {
   String? _audioPath;
   String? _audioId;
   bool _busy = false;
+  VoiceRecorder? _recorder;
+  final TextEditingController _recordingTagController =
+      TextEditingController();
 
   @override
   void initState() {
@@ -1333,22 +1266,50 @@ class _ReminderEditorDialogState extends State<_ReminderEditorDialog> {
   void dispose() {
     _titleController.dispose();
     _snoozeController.dispose();
+    _recordingTagController.dispose();
+    _recorder?.dispose();
     super.dispose();
   }
 
-  Future<void> _record() async {
+  Future<void> _startRecording() async {
     if (_busy) return;
     setState(() => _busy = true);
-    final recorded = await widget.onRecordVoice(context);
-    if (!mounted) return;
-    if (recorded != null) {
-      setState(() {
-        _audioPath = recorded.path;
-        _audioId = recorded.tag;
-      });
-      unawaited(widget.onSaveAudio(recorded.path, recorded.tag));
+    final recorder = VoiceRecorder();
+    try {
+      final started = await recorder.startRecording();
+      if (!mounted || started == null) {
+        await recorder.dispose();
+        return;
+      }
+      _recorder = recorder;
+      setState(() => _busy = false);
+    } catch (error) {
+      await recorder.dispose();
+      if (mounted) {
+        setState(() => _busy = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start recording: $error')),
+        );
+      }
     }
-    if (mounted) setState(() => _busy = false);
+  }
+
+  Future<void> _stopRecording() async {
+    final recorder = _recorder;
+    if (recorder == null || _recordingTagController.text.trim().isEmpty) return;
+    setState(() => _busy = true);
+    final path = await recorder.stopRecording();
+    await recorder.dispose();
+    _recorder = null;
+    if (!mounted || path == null) return;
+    final tag = _recordingTagController.text.trim();
+    setState(() {
+      _audioPath = path;
+      _audioId = tag;
+      _busy = false;
+      _recordingTagController.clear();
+    });
+    unawaited(widget.onSaveAudio(path, tag));
   }
 
   Future<void> _selectSystemTone() async {
@@ -1418,7 +1379,7 @@ class _ReminderEditorDialogState extends State<_ReminderEditorDialog> {
         OutlinedButton.icon(
           icon: const Icon(Icons.mic),
           label: const Text('Record voice'),
-          onPressed: _busy ? null : _record,
+          onPressed: _busy || _recorder != null ? null : _startRecording,
         ),
         OutlinedButton.icon(
           icon: const Icon(Icons.folder_open),
@@ -1429,7 +1390,7 @@ class _ReminderEditorDialogState extends State<_ReminderEditorDialog> {
           OutlinedButton.icon(
             icon: const Icon(Icons.clear),
             label: const Text('Clear'),
-            onPressed: _busy
+            onPressed: _busy || _recorder != null
                 ? null
                 : () => setState(() {
                       _audioPath = null;
@@ -1496,6 +1457,22 @@ class _ReminderEditorDialogState extends State<_ReminderEditorDialog> {
                 style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 4),
             audioButtons,
+            if (_recorder != null) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _recordingTagController,
+                decoration: const InputDecoration(
+                  labelText: 'Voice message name',
+                  hintText: 'e.g. Dentist appointment',
+                ),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: _busy ? null : _stopRecording,
+                icon: const Icon(Icons.stop),
+                label: const Text('Stop and save recording'),
+              ),
+            ],
             const SizedBox(height: 12),
             TextField(
               controller: _snoozeController,
@@ -1509,7 +1486,9 @@ class _ReminderEditorDialogState extends State<_ReminderEditorDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _busy ? null : () => Navigator.of(context).pop(),
+            onPressed: _busy || _recorder != null
+              ? null
+              : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
         TextButton(
