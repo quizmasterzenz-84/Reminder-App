@@ -1,0 +1,18 @@
+workflows:
+  android-debug-apk:
+    name: Android Debug APK
+    max_build_duration: 120
+    environment:
+      flutter: stable
+      java: openjdk|17
+    scripts:
+      - name: Get dependencies
+        script: |
+          cd reminder_demo
+          flutter pub get
+      - name: Build debug APK
+        script: |
+          cd reminder_demo
+          flutter build apk --debug
+    artifacts:
+      - reminder_demo/build/app/outputs/flutter-apk/app-debug.apk
