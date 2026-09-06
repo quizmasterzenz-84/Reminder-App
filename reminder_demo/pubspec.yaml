@@ -39,7 +39,8 @@ dependencies:
     path: ./reusable_reminder_kit
 
   # New dependencies for audio & alarm
-  alarm: 3.1.7        # Codemagic uses this version internally
+  alarm:
+    path: packages/alarm
   just_audio: ^0.9.36
 
   # record 5.x's platform packages (record_linux/record_platform_interface) on

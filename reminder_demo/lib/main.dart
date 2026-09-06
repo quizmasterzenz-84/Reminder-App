@@ -699,18 +699,7 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       audioId: audioId,
     );
 
-    setState(() {
-      if (editing == null) {
-        _reminders.add(updatedReminder);
-      } else {
-        final index = _reminders.indexWhere((reminder) => reminder.id == editing.id);
-        if (index != -1) _reminders[index] = updatedReminder;
-        _alreadyNotifiedIds.remove(editing.id);
-      }
-    });
-    await _saveReminders();
-
-    // Best-effort: native alarm scheduling only works on a real Android build.
+    // Schedule first so an unscheduled reminder is never persisted to the UI.
     try {
       debugPrint(
         'ReminderFlow: scheduling id=${updatedReminder.id} '
@@ -729,7 +718,19 @@ class _ReminderHomePageState extends State<ReminderHomePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not schedule alarm: $error')),
       );
+      return;
     }
+
+    setState(() {
+      if (editing == null) {
+        _reminders.add(updatedReminder);
+      } else {
+        final index = _reminders.indexWhere((reminder) => reminder.id == editing.id);
+        if (index != -1) _reminders[index] = updatedReminder;
+        _alreadyNotifiedIds.remove(editing.id);
+      }
+    });
+    await _saveReminders();
   }
 
   Future<void> _showAudioDialogMessage(

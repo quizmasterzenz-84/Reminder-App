@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:alarm/alarm.dart';
 import 'package:flutter/services.dart';
 
@@ -25,6 +27,11 @@ class AlarmScheduler {
     String? audioPath,
   }) async {
     var resolvedAudioPath = audioPath;
+    if (resolvedAudioPath != null &&
+        resolvedAudioPath.isNotEmpty &&
+        !File(resolvedAudioPath).existsSync()) {
+      resolvedAudioPath = null;
+    }
     if (resolvedAudioPath == null || resolvedAudioPath.isEmpty) {
       try {
         final tones = await SystemAlarmLoader.loadSystemAlarmTones();

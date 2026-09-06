@@ -1,0 +1,32 @@
+name: alarm
+description: A simple Flutter alarm manager plugin for both iOS and Android.
+version: 3.1.7
+homepage: https://github.com/gdelataillade/alarm
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=2.5.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_fgbg: ^0.6.0
+  shared_preferences: ^2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^5.1.0
+
+flutter:
+  assets:
+    - assets/long_blank.mp3
+    - assets/not_blank.mp3
+
+  plugin:
+    platforms:
+      android:
+        package: com.gdelataillade.alarm.alarm
+        pluginClass: AlarmPlugin
+      ios:
+        pluginClass: AlarmPlugin
